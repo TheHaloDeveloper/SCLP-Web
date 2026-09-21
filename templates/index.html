@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Q064ZHL1Q"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-8Q064ZHL1Q');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCLP Official</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/screens.css">
+</head>
+<body>
+{% macro sort_box(name, options) %}
+<label>Sort by:
+    <div class="sort-row">
+        <select id="{{ name }}-sort">
+            {% for value, label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+        <button type="button" id="{{ name }}-sort-dir" class="sort-dir" title="Toggle sort direction"></button>
+    </div>
+</label>
+{% endmacro %}
+    <div id="main">
+        <div id="nav">
+            <div id="nav-links"></div>
+            <div id="nav-right">
+                <a href="https://www.towerstats.com/clans/6" target="_blank" id="clan-link">
+                    <img src="/static/images/towerstats.webp" id="towerstats-icon">
+                    <span id="clan-text">CLAN</span>
+                </a>
+                <img src="/static/images/discord.webp" id="discord">
+                <input type="text" id="username" placeholder="Player...">
+            </div>
+        </div>
+        <div id="home-page" class="hidden">
+            <h1>Soul Crushing Leaderboard Project</h1>
+            <h2>
+                <a href="https://discord.gg/t9crQndHyn" target="_blank">Join the Discord Server to submit completions</a>
+            </h2>
+            <div id="credits"></div>
+        </div>
+        <div id="towers-page" class="hidden">
+            <div class="left">
+                <div class="list">
+                    <table id="towers-table"></table>
+                </div>
+            </div>
+            <div class="right">
+                <div class="panel">
+                    <div class="filters">
+                        <h1>The List</h1>
+                        <div class="filter" id="towers-search">
+                            <input type="text" id="search" placeholder="Search...">
+                        </div>
+                        <div class="filter">
+                            <p>Difficulty:</p>
+                            <div class="diff-checks">
+                                {% for d in diffs[:6] %}<label><input type="checkbox" id="diff-{{ loop.index + 7 }}" checked> {{ d[1] }}</label>{% endfor %}
+                            </div>
+                        </div>
+                        <div class="filter">
+                            <label>Game:
+                                <select id="game-filter"></select>
+                            </label>
+                            {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality")]) }}
+                        </div>
+                    </div>
+
+                    {# i hate how this structure is setup, gonna full refactor this #}
+                    <div class="card" id="tower-details">
+                        <p class="big" id="tower-name"></p> <br>
+                        <p>Difficulty: <span id="tower-diff"></span></p>
+                        <p>Location: <span id="tower-location"></span></p>
+                        <p class="small" id="tower-other-locations"></p>
+                        <p>Rank: #<span id="tower-rank"></span></p>
+                        <p>XP for completion: <span id="tower-xp"></span></p>
+                        <p>Victors: <span id="tower-victor-count"></span></p>
+                        <p id="tower-quality"></p>
+                        <p id="tower-packs"></p>
+                        <p class="small"><i>Tower ID: <span id="tower-id"></span></i></p>
+
+                        <p class="big">Victors</p>
+                        <table id="tower-victors"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="leaderboard-page" class="hidden">
+            <div class="left">
+                <div class="list">
+                    <table id="players-table"></table>
+                </div>
+            </div>
+            <div class="right">
+                <div class="panel">
+                    <div class="filters">
+                        <h1>The Top Obbyists</h1>
+                        <div class="filter" id="players-search"></div>
+                        <div class="filter filter-right">
+                            {{ sort_box("player", player_sorts) }}
+                            <label>Country:
+                                <select id="country-filter">
+                                    <option value="">All Countries</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    {# bad #}
+                    <div class="card" id="player-details">
+                        <p class="big" id="player-name"></p>
+                        <p id="player-role"></p><br>
+
+                        <p>Total XP: <span id="player-xp"></span></p>
+                        <p>Level: <span id="player-level"></span></p>
+                        <p>Rank: <span id="player-rank"></span></p><br>
+
+                        <p class="big">Stats</p>
+                        <table id="player-stats"></table><br>
+
+                        <p class="big">Packs</p>
+                        <div id="player-packs"></div><br>
+
+                        <p class="big">Completions</p>
+                        <table id="player-towers"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="packs-page" class="hidden">
+            <div class="left">
+                <div class="list">
+                    <table id="packs-table"></table>
+                </div>
+            </div>
+            <div class="right">
+                <div class="panel">
+                    <div class="filters">
+                        <h1>Packs</h1>
+                        <div class="filter" id="packs-search"></div>
+                        <div class="filter filter-right">
+                            {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("quality", "Quality")]) }}
+                        </div>
+                    </div>
+                    <div class="card" id="pack-details">
+                        <p class="big" id="pack-name"></p>
+                        <p>Progress: <span id="pack-progress"></span></p>
+                        <p>Bonus XP: <span id="pack-bonus"></span></p>
+                        <p>Victors: <span id="pack-victor-count"></span></p><br>
+                        <p class="big">Towers</p>
+                        <table id="pack-towers"></table><br>
+                        <p class="big">Victors</p>
+                        <table id="pack-victors"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="scotw-page" class="hidden">
+            <div id="scotw-container">
+                <div id="scotw-header">
+                    <h1 id="scotw-title">SC OF THE WEEK</h1>
+                    <p id="scotw-timer">Next tower in: 0d 0h 0m</p>
+                </div>
+
+                <div id="scotw-search"></div>
+
+                <div class="card" id="scotw-leaderboard">
+                    <table id="scotw-table"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {% for name, value in js.items() %}{{ name }} = {{ value | tojson }};
+        {% endfor %}
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="/static/js/misc.js"></script>
+    <script src="/static/js/towermanager.js"></script>
+</body>
+</html>

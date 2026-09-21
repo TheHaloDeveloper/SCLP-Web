@@ -1,0 +1,4 @@
+.env
+service.json
+.DS_Store
+*.pyc

@@ -1,0 +1,202 @@
+@media (max-width: 600px) {
+    #tower-victors {
+        font-size: 0.8em;
+    }
+
+    #tower-victors td {
+        padding: 3px 5px;
+        white-space: normal;
+    }
+
+    #player-towers td:first-child, #pack-towers td:first-child {
+        width: 50px;
+        font-size: 0.7em;
+    }
+
+    #player-towers td:last-child, #pack-towers td:last-child {
+        width: 70px;
+        font-size: 0.7em;
+    }
+
+    #packs-table td:first-child {
+        width: 120px;
+    }
+
+    #pack-towers {
+        font-size: 0.9em;
+    }
+
+    #pack-towers td {
+        padding: 6px 4px;
+    }
+
+    #scotw-page {
+        padding: 15px;
+    }
+
+    #scotw-title {
+        font-size: 1.5em;
+    }
+
+    #scotw-timer {
+        font-size: 1em;
+    }
+
+    #scotw-table td {
+        font-size: 0.8em;
+        padding: 5px 6px;
+    }
+
+    #scotw-table td:first-child {
+        width: 50px;
+    }
+
+    #scotw-table td:last-child {
+        width: 80px;
+    }
+
+    #pack-victors {
+        font-size: 0.8em;
+    }
+
+    #pack-victors td {
+        padding: 4px 3px;
+    }
+
+    #pack-victors td:first-child {
+        width: 50px;
+    }
+
+    #pack-victors td:last-child {
+        width: 70px;
+    }
+}
+
+@media (max-width: 1000px) {
+    #tower-victors {
+        font-size: 0.9em;
+    }
+
+    #tower-victors td {
+        padding: 4px 6px;
+    }
+}
+
+@media (max-width: 1080px) {
+    .left, .right {
+        min-width: 0;
+    }
+
+    #search, #username, #game-filter {
+        font-size: 0.8em;
+        height: 1.5em;
+    }
+
+    #tower-sort, #player-sort {
+        font-size: 0.8em;
+        height: 1.5em;
+        padding: 1px 8px 1px 12px;
+    }
+
+    #player-sort {
+        margin-left: 10px;
+    }
+
+    .tower-link, .player-link, .tower-link-done, .pack-link, .nav-link {
+        font-size: 0.8em;
+    }
+
+    .big {
+        font-size: 1.2em;
+    }
+
+    .small {
+        font-size: 0.6em;
+    }
+
+    input[type=checkbox] {
+        width: 0.8em;
+        height: 0.8em;
+    }
+
+    #towers-table td:first-child, #players-table td:first-child {
+        width: 50px;
+    }
+
+    #towers-table td, #players-table td {
+        font-size: 0.8em;
+    }
+
+    #player-towers td:first-child, #pack-towers td:first-child {
+        width: 60px;
+        font-size: 0.8em;
+    }
+
+    #player-towers td:last-child, #pack-towers td:last-child {
+        width: 80px;
+        font-size: 0.8em;
+    }
+
+    #packs-table td:nth-child(2) {
+        width: 80px;
+    }
+
+    #scotw-page {
+        padding: 20px;
+    }
+
+    #scotw-title {
+        font-size: 2em;
+    }
+
+    #scotw-timer {
+        font-size: 1.1em;
+    }
+
+    #scotw-table td {
+        font-size: 0.9em;
+        padding: 6px 8px;
+    }
+
+    #scotw-table td:first-child {
+        width: 60px;
+    }
+
+    #scotw-table td:last-child {
+        width: 100px;
+    }
+
+    #nav-right {
+        gap: 10px;
+    }
+
+    #discord {
+        width: 30px;
+    }
+
+    #clan-link {
+        height: 30px;
+        padding: 3px 8px 3px 5px;
+    }
+
+    #towerstats-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    #clan-text {
+        font-size: 12px;
+    }
+
+    #pack-victors {
+        font-size: 0.9em;
+    }
+
+    #pack-victors td:first-child {
+        width: 60px;
+    }
+
+    #pack-victors td:last-child {
+        width: 80px;
+    }
+}
