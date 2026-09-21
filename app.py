@@ -208,4 +208,4 @@ def get_scotw():
     return jsonify({**scotw, "Target": int(next_scotw(start).timestamp())})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, port=5003)
+    app.run(host="0.0.0.0", debug=False, port=5003)
