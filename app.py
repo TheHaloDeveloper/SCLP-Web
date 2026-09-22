@@ -71,8 +71,22 @@ def parse_packs(raw, tower_by_id):
     for pack in raw:
         if pack["id"]:
             ids = [int(pack[f"tower{i}"]) for i in range(1, 11) if pack[f"tower{i}"] != ""]
-            xp = sum(tower_by_id[tid]["xp"] for tid in ids if tid in tower_by_id)
-            packs.append({"id": pack["id"], "name": pack["name"], "towers": ids, "xp": math.floor(xp / len(ids)) if ids else 0})
+            
+            # Map valid IDs to their corresponding completion XP values from the sheet
+            base_scores = [tower_by_id[tid]["xp"] for tid in ids if tid in tower_by_id]
+            n = len(base_scores)
+            
+            if n > 0:
+                # Applies a 1.5 Power Mean to use a dynamic weighted average instead of a simply average for xp calculation. Ensures pack xp is not pulled down by easier towers.
+                power_sum = sum(pow(score, 1.5) for score in base_scores) # Changing this number will change the intensity of the right-skewed distribution
+                power_mean = pow(power_sum / n, 1 / 1.5)
+                
+                # Provides a multiplier based on the number of towers in the pack to better reward longer packs (+10% multiplier per tower starting at 4 towers)
+                multiplier = 1.0 + (n - 3) * 0.10
+                final_xp = math.floor(power_mean * multiplier)
+            else:
+                final_xp = 0
+            packs.append({"id": pack["id"], "name": pack["name"], "towers": ids, "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
 def build():
