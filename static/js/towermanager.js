@@ -157,12 +157,14 @@ function render_packs() {
         xp: p => p.xp,
         towers: p => p.towers.length,
         hardest: p => pack_info[p.id].hardest,
+        progress: p => p.towers.length !== 0 ? done_count(p, player) / p.towers.length : 0,
         quality: p => quality_order[pack_info[p.id].avg_quality],
     }[sort];
     let last = {
         xp: p => `${format_num(p.xp)} XP`,
         towers: p => `${done_count(p, player)}/${p.towers.length}`,
         hardest: p => diff_span(pack_info[p.id].hardest),
+        progress: p => `${(value(p) * 100).toFixed(1)}%`,
         quality: p => `<span class="${quality_cls(pack_info[p.id].avg_quality)}">${pack_info[p.id].avg_quality}</span>`,
     }[sort];
 
