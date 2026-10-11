@@ -209,6 +209,28 @@ p {
     width: 100%;
 }
 
+.table-row-link {
+    display: inline-block;
+    padding: 1px 0px;
+    text-decoration: none;
+    vertical-align: -6px;
+    cursor: pointer;
+}
+
+.inline-link {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .tower-link, .player-link, .pack-link {
     color: #FFFFFF;
 }
