@@ -37,21 +37,45 @@ function diff_span(d) {
     return `<span class="${diff_name(d)}">${format_num(d / 100)}</span>`;
 }
 
+function open_tower_row_link(event, id) {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return true;
+    open_tower(id);
+    return false;
+}
+
+function open_player_row_link(event, name, rank) {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return true;
+    open_player(name, rank);
+    return false;
+}
+
+function open_link_in_new_tab_on_middle_click(event, url) {
+    if (event.button !== 1) return;
+    event.preventDefault();
+    window.open(url, "_blank", "noopener");
+}
+
 function tower_row(t, last, button = "tower-link", attrs = "") {
+    let tower_name = `<a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${t.name}</a>`;
     return `
         <tr ${attrs}>
             <td class="${diff_name(t.difficulty)}">#${t.rank}</td>
-            <td><button class="${button}" onclick="open_tower(${t.id})">${t.name}</button></td>
+            <td>${tower_name}</td>
             ${last}
         </tr>
     `;
 }
 
 function player_row(name, rank, last, attrs = "") {
+    let player = find_player(name);
+    let encoded_name = encodeURIComponent(player?.username || name).replace(/'/g, "%27");
+    let player_name = player
+        ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>`
+        : role(name, true);
     return `
         <tr data-name="${name.toLowerCase()}" ${attrs}>
             <td>#${rank}</td>
-            <td><button class="player-link" onclick='open_player("${name}", ${rank})'>${role(name, true)}</button></td>
+            <td>${player_name}</td>
             ${last}
         </tr>
     `;
@@ -101,7 +125,7 @@ function filter_towers() {
 
     filter_rows("towers-table", row => {
         let {id, name, abbr, diff, places} = row.dataset;
-        row.querySelector("button").className = done.has(+id) ? "tower-link-done" : "tower-link";
+        row.querySelector(".tower-link, .tower-link-done").className = `table-row-link ${done.has(+id) ? "tower-link-done" : "tower-link"}`;
         return (name.includes(search) || abbr.includes(search)) && allowed.includes(+diff) && (!place || places.split(",").includes(place));
     });
 }
@@ -177,7 +201,7 @@ function render_packs() {
         return `
             <tr data-name="${pack.name.toLowerCase()}">
                 <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-                <td><button class="${done ? 'pack-link-done' : 'pack-link'}" onclick="open_pack('${pack.id}')">${pack.name}</button></td>
+                <td><button class="${done ? 'pack-link-done' : 'pack-link'}" onclick="open_pack('${pack.id}')" onmousedown="open_link_in_new_tab_on_middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
                 ${td_right(last(pack))}
             </tr>
         `;
@@ -261,13 +285,16 @@ $(document).on("click", "a[data-open]", function (e) {
 });
 
 function render_tower_creators(creators) {
-    let creator_links = names => names.map(c => find_player(c) ? entity_link("u", find_player(c).username, c) : c).join(", ");
+    let creator_links = names => names.map(c => {
+        let player = find_player(c);
+        return player ? entity_link("u", player.username, c) : c;
+    }).join(", ");
     let toggle = label => `<button type="button" class="link-button" onclick="toggle_tower_creators()">${label}</button>`;
-    if (creators.length <= 4) return `Created by: ${creator_links(creators)}`;
+    if (creators.length <= 5) return `Created by: ${creator_links(creators)}`;
     if (tower_creators_expanded) {
         return `Created by: ${creator_links(creators)} ${toggle("(Show Less)")}`;
     }
-    return `Created by: ${creator_links(creators.slice(0, 3))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
+    return `Created by: ${creator_links(creators.slice(0, 4))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
 }
 
 function toggle_tower_creators() {
@@ -292,7 +319,7 @@ function open_tower(id) {
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
     $("#tower-quality").html(tower.quality ? `Quality: <span class="${quality_cls(tower.quality)}">${tower.quality}</span>` : "").toggle(Boolean(tower.quality));
-    $("#tower-packs").html(tower_packs.length ? `Packs: ${tower_packs.map(pack => `${entity_link("pk", pack.id, pack.name)}`).join(", ")}` : "").toggle(tower_packs.length > 0);
+    $("#tower-packs").html(tower_packs.length ? `Packs: ${tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")}` : "").toggle(tower_packs.length > 0);
     $("#tower-id").html(id);
     $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
 }
@@ -409,3 +436,8 @@ restore(() => {
     if (!route(new URLSearchParams(window.location.search))) open_page("Home");
 });
 window.history.replaceState({page: current_page}, '', current_url());
+
+fetch("/get_scotw").then(res => res.json()).then(data => {
+    scotw = data;
+    render_scotw();
+});
