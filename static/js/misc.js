@@ -1,8 +1,14 @@
+function player_identifier(player) {
+    if (!player) return "";
+    return String(player.userid ?? player.username ?? "").trim();
+}
+
 function find_player(name) {
+    if (name === null || name === undefined || name === "") return false;
     if (player_lookup[name]) return player_lookup[name];
-    let lower = name.toLowerCase();
+    let lower = String(name).toLowerCase();
     for (let key in player_lookup) {
-        if (key.toLowerCase() == lower) return player_lookup[key];
+        if (String(key).toLowerCase() == lower) return player_lookup[key];
     }
     return false;
 }
@@ -111,12 +117,13 @@ document.querySelectorAll("input").forEach(input => {
 
 let pages = ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"];
 for (let page of pages) {
-    $("#nav-links").append(`<button class="nav-link" onclick="open_page('${page}')">${page}</button>`);
+    $("#nav-links").append(`<button class="nav-link" onclick="open_page('${page}')" onmousedown="open_link_in_new_tab_on_middle_click(event, '/?page=${page.toLowerCase()}')">${page}</button>`);
 }
 
 let current_page = "Home";
 let current_tower_id = null;
 let current_player_name = null;
+let current_player_id = null;
 let current_pack_id = null;
 
 let search_slots = {
@@ -149,13 +156,30 @@ function current_url() {
     if (current_page == "Towers" && current_tower_id != null) {
         qs = `t=${current_tower_id}`;
     } else if (current_page == "Leaderboard" && current_player_name != null) {
-        qs = `u=${encodeURIComponent(current_player_name)}`;
+        qs = `u=${encodeURIComponent(current_player_id || current_player_name)}`;
     } else if (current_page == "Packs" && current_pack_id != null) {
         qs = `pk=${current_pack_id}`;
     } else if (current_page == "Home" || current_page == "SCoTW") {
         qs = `page=${current_page.toLowerCase()}`;
     }
     return qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+}
+
+function resolve_player_key(value) {
+    if (value == null || value === "") return null;
+    let raw = String(value).trim();
+    if (!raw) return null;
+    let direct = find_player(raw);
+    if (direct) return direct.username;
+    let numeric = Number(raw);
+    if (!Number.isNaN(numeric)) {
+        let by_id = players.find(p => String(player_identifier(p)) === raw);
+        if (by_id) return by_id.username;
+    }
+    for (let p of players) {
+        if (String(p.username).toLowerCase() === raw.toLowerCase()) return p.username;
+    }
+    return raw;
 }
 
 let restoring = false;
@@ -171,7 +195,7 @@ function restore(fn) {
 function route(params) {
     let page_name = pages.find(p => p.toLowerCase() == (params.get("page") || "").toLowerCase());
     if (params.get("t")) open_tower(parseInt(params.get("t")));
-    else if (params.get("u")) open_player(params.get("u"));
+    else if (params.get("u")) open_player(resolve_player_key(params.get("u")) || params.get("u"));
     else if (params.get("pk")) open_pack(params.get("pk"));
     else if (page_name) open_page(page_name);
     else return false;
@@ -225,10 +249,6 @@ function update_timer() {
 $("#search").on("input", () => search_filters[current_page]?.());
 
 let scotw;
-fetch("/get_scotw").then(res => res.json()).then(data => {
-    scotw = data;
-    render_scotw();
-});
 
 document.getElementById('discord').addEventListener('click', function() {
     window.open('https://discord.gg/t9crQndHyn', '_blank');

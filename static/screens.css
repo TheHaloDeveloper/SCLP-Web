@@ -8,12 +8,12 @@
         white-space: normal;
     }
 
-    #player-towers td:first-child, #pack-towers td:first-child {
+    #player-towers td:first-child, #player-creations td:first-child, #pack-towers td:first-child {
         width: 50px;
         font-size: 0.7em;
     }
 
-    #player-towers td:last-child, #pack-towers td:last-child {
+    #player-towers td:last-child, #player-creations td:last-child, #pack-towers td:last-child {
         width: 70px;
         font-size: 0.7em;
     }

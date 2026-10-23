@@ -79,13 +79,17 @@
                             <label>Game:
                                 <select id="game-filter"></select>
                             </label>
-                            {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality")]) }}
+                            {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
                         </div>
                     </div>
 
                     {# i hate how this structure is setup, gonna full refactor this #}
                     <div class="card" id="tower-details">
-                        <p class="big" id="tower-name"></p> <br>
+                        <div id="tower-name-group">
+                            <p class="big" id="tower-name"></p>
+                            <p class="small" id="tower-alternate-names"></p>
+                            <p class="small" id="tower-previous-names"></p>
+                        </div>
                         <p>Difficulty: <span id="tower-diff"></span></p>
                         <p>Location: <span id="tower-location"></span></p>
                         <p class="small" id="tower-other-locations"></p>
@@ -94,6 +98,7 @@
                         <p>XP for completion: <span id="tower-xp"></span></p>
                         <p>Victors: <span id="tower-victor-count"></span></p>
                         <p id="tower-quality"></p>
+                        <p id="tower-length"></p>
                         <p id="tower-packs"></p>
                         <p class="small"><i>Tower ID: <span id="tower-id"></span></i></p>
 
@@ -136,11 +141,15 @@
                         <p class="big">Stats</p>
                         <table id="player-stats"></table><br>
 
-                        <p class="big">Packs</p>
-                        <div id="player-packs"></div><br>
-
-                        <p class="big">Completions</p>
+                        <div class="player-tower-views hidden" id="player-tower-views" role="group" aria-label="Player lists">
+                            <button type="button" class="player-tower-tab active" id="player-completions-tab" aria-pressed="true" onclick="show_player_tower_view('completions')">Completions</button>
+                            <button type="button" class="player-tower-tab" id="player-packs-tab" aria-pressed="false" onclick="show_player_tower_view('packs')">Packs</button>
+                            <button type="button" class="player-tower-tab" id="player-creations-tab" aria-pressed="false" onclick="show_player_tower_view('creations')">Creations</button>
+                        </div>
+                        <p class="big hidden" id="player-tower-view-title">Completions</p>
                         <table id="player-towers"></table>
+                        <table id="player-packs" class="hidden"></table>
+                        <table id="player-creations" class="hidden"></table>
                     </div>
                 </div>
             </div>
@@ -157,7 +166,7 @@
                         <h1>Packs</h1>
                         <div class="filter" id="packs-search"></div>
                         <div class="filter filter-right">
-                            {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress", "Completion (%)"), ("quality", "Quality")]) }}
+                            {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
                         </div>
                     </div>
                     <div class="card" id="pack-details">
