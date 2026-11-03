@@ -150,11 +150,13 @@ function render_players() {
     let value = {
         xp: p => p.total_xp,
         completions: p => p.completions.length,
+        packs: p => Object.values(pack_victors).filter(names => names.includes(p.username)).length,
         hardest: p => player_hardest[p.username],
     }[sort] || (p => diff_counts[p.username][diff] || 0);
     let text = {
         xp: v => `Level ${level_text(v, true)}`,
         completions: v => `${v} SCs`,
+        packs: v => `${v} Packs`,
         hardest: v => diff_span(v),
     }[sort] || (v => `<span class="${diff}">${v} ${diff}s</span>`);
 
