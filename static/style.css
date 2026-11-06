@@ -84,6 +84,16 @@ span {
     border-color: #505A64;
 }
 
+.player-creation-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.player-creation-filters label {
+    white-space: nowrap;
+}
+
 p {
     margin: 0;
 }

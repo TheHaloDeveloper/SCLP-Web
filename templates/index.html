@@ -152,6 +152,10 @@
                             <button type="button" class="player-tower-tab" id="player-creations-tab" aria-pressed="false" onclick="show_player_tower_view('creations')">Creations</button>
                         </div>
                         <p class="big hidden" id="player-tower-view-title">Completions</p>
+                        <div class="player-creation-filters hidden" id="player-creation-filters">
+                            <label><input type="checkbox" id="player-solo-creations" checked> Solo projects (<span id="player-solo-creations-count">0</span>)</label>
+                            <label><input type="checkbox" id="player-collaborations" checked> Collaborations (<span id="player-collaborations-count">0</span>)</label>
+                        </div>
                         <table id="player-towers"></table>
                         <table id="player-packs" class="hidden"></table>
                         <table id="player-creations" class="hidden"></table>
