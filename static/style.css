@@ -17,6 +17,12 @@ html, body {
     height: 100%;
 }
 
+html:has(body.legal-page) {
+    height: auto;
+    overflow-y: auto;
+}
+
+
 button, input, select, ::placeholder {
     font-family: inherit;
     color: inherit;
@@ -54,6 +60,38 @@ span {
     font: inherit;
     color: inherit;
     text-decoration: underline;
+}
+
+.player-tower-views {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.player-tower-tab {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border: 1px solid #303540;
+    border-radius: 6px;
+    background: #252830;
+    font: inherit;
+}
+
+.player-tower-tab.active {
+    background: #363840;
+    border-color: #505A64;
+}
+
+.player-creation-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.player-creation-filters label {
+    white-space: nowrap;
 }
 
 p {
@@ -231,10 +269,6 @@ p {
     cursor: pointer;
 }
 
-.tower-link, .player-link, .pack-link {
-    color: #FFFFFF;
-}
-
 .tower-link-done, .pack-link-done {
     color: #FFFFFF20;
     text-decoration: line-through;
@@ -289,8 +323,24 @@ p {
     margin: 0 !important;
 }
 
-#tower-details > #tower-name {
-    margin: 8px 0 35px !important;
+#tower-name-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+}
+
+#tower-name-group > p {
+    line-height: 1.2;
+}
+
+#tower-alternate-names,
+#tower-previous-names {
+    font-style: italic;
+}
+
+#tower-name-group > #tower-name {
+    margin: 8px 0 0 !important;
 }
 
 #tower-details > .big:not(#tower-name) {
@@ -362,8 +412,6 @@ p {
 }
 
 .sort-dir {
-    display: inline-block;
-    vertical-align: middle;
     flex: 0 0 auto;
     border: none;
     border-radius: 8px;
@@ -467,12 +515,65 @@ p {
     border: 1px solid #40454f;
     border-radius: 12px;
     display: inline-block;
-    color: #FFFFFF;
     text-decoration: none;
 }
 
 #home-page h2 a:hover {
     background: #363840;
+}
+
+.site-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 40px;
+    font-size: 13px;
+    color: #a0a8b0;
+}
+
+.site-footer a {
+    color: #a0a8b0;
+}
+
+.site-footer a:hover {
+    color: #FFFFFF;
+}
+
+body.legal-page {
+    height: auto;
+    min-height: 100%;
+   overflow-y: visible;
+   overscroll-behavior: auto;
+}
+
+.legal-content {
+    width: min(900px, calc(100% - 40px));
+    margin: 40px auto;
+    padding: 40px;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.legal-content h1 {
+    margin-top: 18px;
+}
+
+.legal-content h2 {
+    margin-top: 28px;
+    font-size: 22px;
+}
+
+.legal-content ul {
+    padding-left: 24px;
+}
+
+.legal-effective {
+    color: #a0a8b0;
+}
+
+.legal-back {
+    font-size: 14px;
 }
 
 .badge {
@@ -481,7 +582,7 @@ p {
     padding-left: 5px;
 }
 
-#player-stats, #player-towers, #tower-victors {
+#player-stats, #player-towers, #player-packs, #player-creations, #tower-victors {
     text-align: left;
 }
 
@@ -491,7 +592,6 @@ p {
 
 #tower-victors, #pack-victors {
     width: 100%;
-    max-width: 100%;
     table-layout: auto;
     border-collapse: collapse;
     word-break: break-word;
@@ -516,33 +616,29 @@ p {
     text-align: right;
 }
 
-#player-towers, #pack-towers {
+#player-towers, #player-packs, #player-creations, #pack-towers {
     width: 100%;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0 5px;
 }
 
-#player-towers td:first-child, #pack-towers td:first-child {
+#player-towers td:first-child, #player-packs td:first-child, #player-creations td:first-child, #pack-towers td:first-child {
     width: 80px;
     text-align: center;
     white-space: nowrap;
 }
 
-#player-towers td:nth-child(2), #pack-towers td:nth-child(2) {
+#player-towers td:nth-child(2), #player-packs td:nth-child(2), #player-creations td:nth-child(2), #pack-towers td:nth-child(2) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-#player-towers td:last-child, #pack-towers td:last-child {
+#player-towers td:last-child, #player-packs td:last-child, #player-creations td:last-child, #pack-towers td:last-child {
     width: 100px;
     text-align: right;
     white-space: nowrap;
-}
-
-#player-packs p {
-    margin: 5px 0;
 }
 
 .fi {
@@ -594,7 +690,6 @@ p {
 
 #scotw-title .tower-link {
     font-size: inherit;
-    color: inherit;
     width: auto;
     font-weight: bold;
     text-align: center;
@@ -671,7 +766,6 @@ p {
     font-weight: bold;
     letter-spacing: 1px;
     text-align: left;
-    display: inline-block;
 }
 
 ::-webkit-scrollbar {
@@ -690,11 +784,9 @@ p {
 
 .quality-ss { color: #FF72DF; }
 .quality-s-plus { color: #FF6BA3; }
-.quality-s { color: #FF7F7F; }
-.quality-s-minus { color: #FF7F7F; }
+.quality-s, .quality-s-minus { color: #FF7F7F; }
 .quality-a { color: #FEBF7F; }
 .quality-b { color: #FFDF80; }
 .quality-c { color: #FFFF7F; }
 .quality-d { color: #C0FF7F; }
 .quality-f { color: #7FFFFF; }
-.quality-x { color: #797981; }

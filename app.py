@@ -33,7 +33,7 @@ def get_data(r):
     return data
 
 diffs = [(900, "Insane"), (1000, "Extreme"), (1100, "Terrifying"), (1200, "Catastrophic"), (1300, "Horrific"), (1400, "Unreal"), (99999, "Nil")]
-player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("hardest", "Hardest Tower")] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
+player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("packs", "Packs Completed"), ("hardest", "Hardest Tower"),] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
 
 def diff_name(d):
     return next(name for limit, name in diffs if d < limit)
@@ -92,7 +92,7 @@ def parse_packs(raw, tower_by_id):
 
 def build():
     with ThreadPoolExecutor(max_workers=4) as pool:
-        players, towers, games, countries = pool.map(get_data, ["comps!A:C", "towers!A:J", "games!A:C", "nationalities!A:B"])
+        players, towers, games, countries = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B"])
 
     flags = {}
     for c in countries:
@@ -110,12 +110,9 @@ def build():
         p["nationality"] = flags.get(p["username"])
         p["xp"] = sum(tower_by_id[id]["xp"] for id in p["completions"] if id in tower_by_id)
 
-    players.sort(key=lambda p: p["xp"], reverse=True)
     towers.sort(key=lambda t: (-t["difficulty"], -t["id"]))
     for rank, tower in enumerate(towers, 1):
         tower["rank"] = rank
-    for rank, p in enumerate(players, 1):
-        p["rank"] = rank
 
     packs = parse_packs(get_data("packs!A:M"), tower_by_id)
 
@@ -129,6 +126,19 @@ def build():
     player_hardest = {}
     diff_counts = {}
     player_towers = {}
+
+    for player in players:
+        done = set(player["completions"])
+        bonus = sum(
+            pack["xp"]
+            for pack in packs
+            if pack["towers"] and done.issuperset(pack["towers"])
+        )
+        player["total_xp"] = player["xp"] + bonus
+
+    players.sort(key=lambda p: p["total_xp"], reverse=True)
+    for rank, player in enumerate(players, 1):
+        player["rank"] = rank
 
     for player in players:
         name = player["username"]
@@ -145,13 +155,9 @@ def build():
         player_towers[name] = [t["id"] for t in sorted(owned, key=lambda t: t["rank"])]
 
         done = set(player["completions"])
-        bonus = 0
         for pack in packs:
             if pack["towers"] and done.issuperset(pack["towers"]):
-                bonus += pack["xp"]
                 pack_victors[pack["id"]].append(name)
-
-        player["total_xp"] = player["xp"] + bonus
 
     return {
         "players": players,
@@ -212,6 +218,10 @@ for entry in staff:
 
 scotw_points = get_data("scotwpoints!A:B")
 
+def player_identity(player):
+    return str(player.get("userid") or player.get("username", "")).strip()
+
+
 def level_of(xp):
     level = 0
     need = 175
@@ -221,16 +231,23 @@ def level_of(xp):
         need = 150 + 25 * (level + 1) ** 2
     return level
 
+
 def page_meta():
     meta = {"title": "SCLP Official", "description": "Soul Crushing Leaderboard Project"}
-    name = request.args.get("u", "").lower()
+    user_value = request.args.get("u", "")
     tower_id = request.args.get("t", "")
     pack_id = request.args.get("pk", "")
 
-    player = next((p for p in data["players"] if p["username"].lower() == name), None) if name else None
+    player = None
+    if user_value:
+        target = user_value.strip().lower()
+        player = next((
+            p for p in data["players"]
+            if str(p.get("username", "")).lower() == target
+            or str(player_identity(p)).lower() == target
+        ), None)
     tower = next((t for t in data["towers"] if str(t["id"]) == tower_id), None) if tower_id else None
     pack = next((p for p in data["packs"] if p["id"] == pack_id), None) if pack_id else None
-
     if player:
         meta["title"] = f'{player["username"]} - SCLP'
         meta["description"] = f'Rank #{player["rank"]} | Level {level_of(player["total_xp"])} | {player["total_xp"]:,} XP | {len(player["completions"])} SCs beaten'
@@ -246,6 +263,16 @@ def page_meta():
 def home():
     js = {**data, "cool_members": cool_members, "staff": staff, "roles": roles, "scotw_points": scotw_points, "diffs": diffs}
     return render_template("index.html", js=js, diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+
+@app.route("/privacy-policy")
+def privacy_policy():
+    meta = {"title": "Privacy Policy - SCLP", "description": "Privacy Policy for sclp.pro"}
+    return render_template("privacy_policy.html", meta=meta)
+
+@app.route("/terms-of-service")
+def terms_of_service():
+    meta = {"title": "Terms of Service - SCLP", "description": "Terms of Service for sclp.pro"}
+    return render_template("terms_of_service.html", meta=meta)
 
 def next_scotw(after):
     local = after.astimezone(ZoneInfo("America/New_York"))
