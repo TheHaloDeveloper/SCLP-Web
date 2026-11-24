@@ -489,7 +489,7 @@ p {
     opacity: 0.9;
 }
 
-#home-page h2 a {
+#home-page h2 a, .site-footer a {
     padding: 12px 24px;
     background: #2a2d35;
     border: 1px solid #40454f;
@@ -498,26 +498,21 @@ p {
     text-decoration: none;
 }
 
-#home-page h2 a:hover {
+#home-page h2 a:hover, .site-footer a:hover {
     background: #363840;
 }
 
 .site-footer {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-top: 40px;
-    font-size: 13px;
-    color: #a0a8b0;
+    font-size: 0.9em;
+    opacity: 0.9;
 }
 
 .site-footer a {
-    color: #a0a8b0;
-}
-
-.site-footer a:hover {
-    color: #FFFFFF;
+    padding: 8px 18px;
 }
 
 body.legal-page {
