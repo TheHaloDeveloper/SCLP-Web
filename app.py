@@ -201,16 +201,30 @@ def tower_data_csv():
     response.headers['Content-Disposition'] = 'attachment; filename=tower_data.csv'
     return response
 
-# rewrite below
-try:
-    cool_members = requests.get("http://127.0.0.1:8082/cool_members", timeout=5).json()
-except requests.exceptions.RequestException:
-    cool_members = []
-
-staff = get_data("credits!A:B")
+cool_members = []
+staff = []
 roles = {}
-for entry in staff:
-    roles.setdefault(entry["username"], entry["role"])
+role_colors = {}
+
+def load_bot_data():
+    global cool_members, staff, roles, role_colors
+    try:
+        cool_members = requests.get("http://127.0.0.1:8082/cool_members", timeout=5).json()
+        staff = requests.get("http://127.0.0.1:8082/staff", timeout=5).json()
+    except requests.exceptions.RequestException:
+        return
+    roles = {}
+    for group in staff:
+        for name in group["members"]:
+            roles.setdefault(name, group["name"])
+    role_colors = {group["name"]: group["color"] for group in staff}
+
+def refresh_bot_data():
+    while True:
+        load_bot_data()
+        time.sleep(300)
+
+threading.Thread(target=refresh_bot_data, daemon=True).start()
 
 scotw_points = get_data("scotwpoints!A:B")
 
@@ -255,7 +269,7 @@ def page_meta():
 
 @app.route("/")
 def home():
-    js = {**data, "cool_members": cool_members, "staff": staff, "roles": roles, "scotw_points": scotw_points, "diffs": diffs}
+    js = {**data, "cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs}
     return render_template("index.html", js=js, diffs=diffs, player_sorts=player_sorts, meta=page_meta())
 
 @app.route("/privacy-policy")

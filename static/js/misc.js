@@ -38,17 +38,12 @@ function title_case(str) {
     return str.replace(/\w\S*/g, text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase());
 }
 
-function slug(role) {
-    return role.toLowerCase().replaceAll(" ", "-");
+function colored(text, color) {
+    return color ? `<span style="color: ${color}">${text}</span>` : text;
 }
 
-let credits = {};
-for (let {role, username} of staff) {
-    (credits[role] ||= []).push(username);
-}
-
-for (let [role, users] of Object.entries(credits)) {
-    $("#credits").append(`<h3><div class="${slug(role)}">[${title_case(role)}]</div>${users.join(", ")}</h3>`);
+for (let {name, color, members} of staff) {
+    if (members.length) $("#credits").append(`<h3><div>${colored(`[${name}]`, color)}</div>${members.join(", ")}</h3>`);
 }
 
 function format_num(num) {

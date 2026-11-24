@@ -374,7 +374,7 @@ function level_text(xp, level_only) {
 function role(name, html = false) {
     let found = roles[name];
     if (!html) return found || "";
-    if (found) return `<span class="${slug(found)}">${name}</span>`;
+    if (found) return colored(name, role_colors[found]);
     return cool_members.includes(name) ? `<span class="cool">${name}</span>` : name;
 }
 
@@ -429,7 +429,7 @@ function open_player(name, rank) {
     let total_all = Object.values(diff_totals).reduce(sum, 0);
 
     $("#player-name").html(`${username} ${flag_html(player.nationality)}`);
-    $("#player-role").html(job ? `<span class="${slug(job)}">${job}</span>` : "");
+    $("#player-role").html(job ? colored(job, role_colors[job]) : "");
     $("#player-xp").html(format_num(player.total_xp));
     $("#player-level").html(level_text(player.total_xp));
     $("#player-rank").html(`#${rank || player.rank}`);
