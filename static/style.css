@@ -265,10 +265,6 @@ p {
     text-decoration: line-through;
 }
 
-.pack-link, .pack-link-done {
-    padding: 0;
-}
-
 .player-link {
     width: 15em;
     overflow-x: scroll;

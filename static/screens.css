@@ -19,7 +19,7 @@
     }
 
     #packs-table td:first-child {
-        width: 120px;
+        width: 50px;
     }
 
     #pack-towers {
@@ -102,7 +102,7 @@
         margin-left: 10px;
     }
 
-    .tower-link, .player-link, .tower-link-done, .pack-link, .nav-link {
+    .tower-link, .player-link, .tower-link-done, .pack-link, .pack-link-done, .nav-link {
         font-size: 0.8em;
     }
 
@@ -119,26 +119,22 @@
         height: 0.8em;
     }
 
-    #towers-table td:first-child, #players-table td:first-child {
+    #towers-table td:first-child, #players-table td:first-child, #packs-table td:first-child {
         width: 50px;
     }
 
-    #towers-table td, #players-table td {
+    #towers-table td, #players-table td, #packs-table td {
         font-size: 0.8em;
     }
 
-    #player-towers td:first-child, #pack-towers td:first-child {
+    #player-towers td:first-child, #player-packs td:first-child, #player-creations td:first-child, #pack-towers td:first-child {
         width: 60px;
         font-size: 0.8em;
     }
 
-    #player-towers td:last-child, #pack-towers td:last-child {
+    #player-towers td:last-child, #player-packs td:last-child, #player-creations td:last-child, #pack-towers td:last-child {
         width: 80px;
         font-size: 0.8em;
-    }
-
-    #packs-table td:nth-child(2) {
-        width: 80px;
     }
 
     #scotw-page {
