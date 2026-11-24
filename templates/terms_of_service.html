@@ -1,18 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ meta.title }}</title>
-    <meta name="description" content="{{ meta.description }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body class="legal-page">
-    <main class="legal-content card">
-        <a class="legal-back" href="/">&larr; Back to SCLP</a>
-        <h1>Terms of Service for sclp.pro</h1>
-        <p class="legal-effective"><strong>Effective Date: </strong>October 29, 2026</p>
+{% extends "legal.html" %}
+{% block heading %}Terms of Service for sclp.pro{% endblock %}
+{% block content %}
 
         <h2>1. Acceptance of Terms</h2>
         <p>By accessing and using sclp.pro ("the Website", "the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our Service.</p>
@@ -54,6 +42,4 @@
 
         <h2>8. Contact Us</h2>
         <p>For any questions regarding these Terms of Service, please contact us through the official sclp.pro Discord Server (https://discord.gg/t9crQndHyn).</p>
-    </main>
-</body>
-</html>
+{% endblock %}

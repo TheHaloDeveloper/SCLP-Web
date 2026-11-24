@@ -22,7 +22,6 @@ html:has(body.legal-page) {
     overflow-y: auto;
 }
 
-
 button, input, select, ::placeholder {
     font-family: inherit;
     color: inherit;
@@ -255,20 +254,6 @@ p {
     cursor: pointer;
 }
 
-.inline-link {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    line-height: inherit;
-    text-align: left;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
 .tower-link-done, .pack-link-done {
     color: #FFFFFF20;
     text-decoration: line-through;
@@ -311,10 +296,6 @@ p {
     overflow-y: auto;
 }
 
-#tower-details > br {
-    display: none;
-}
-
 #tower-details > p {
     line-height: 1.2;
 }
@@ -334,8 +315,7 @@ p {
     line-height: 1.2;
 }
 
-#tower-alternate-names,
-#tower-previous-names {
+#tower-alternate-names, #tower-previous-names {
     font-style: italic;
 }
 
@@ -543,8 +523,8 @@ p {
 body.legal-page {
     height: auto;
     min-height: 100%;
-   overflow-y: visible;
-   overscroll-behavior: auto;
+    overflow-y: visible;
+    overscroll-behavior: auto;
 }
 
 .legal-content {
@@ -616,26 +596,26 @@ body.legal-page {
     text-align: right;
 }
 
-#player-towers, #player-packs, #player-creations, #pack-towers {
+.entries {
     width: 100%;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0 5px;
 }
 
-#player-towers td:first-child, #player-packs td:first-child, #player-creations td:first-child, #pack-towers td:first-child {
+.entries td:first-child {
     width: 80px;
     text-align: center;
     white-space: nowrap;
 }
 
-#player-towers td:nth-child(2), #player-packs td:nth-child(2), #player-creations td:nth-child(2), #pack-towers td:nth-child(2) {
+.entries td:nth-child(2) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-#player-towers td:last-child, #player-packs td:last-child, #player-creations td:last-child, #pack-towers td:last-child {
+.entries td:last-child {
     width: 100px;
     text-align: right;
     white-space: nowrap;

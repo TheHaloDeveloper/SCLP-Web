@@ -2,6 +2,7 @@ let tower_lookup = {};
 let player_lookup = {};
 let game_lookup = {};
 let pack_info = {};
+let pack_counts = {};
 let tower_creators_expanded = false;
 let player_created_towers = [];
 
@@ -24,6 +25,11 @@ function build_lookups() {
         avg_quality: avg_quality(p.towers),
     }]));
     [...packs].sort((a, b) => b.xp - a.xp).forEach((p, i) => pack_info[p.id].rank = i + 1);
+
+    pack_counts = {};
+    for (let names of Object.values(pack_victors)) {
+        for (let name of names) pack_counts[name] = (pack_counts[name] || 0) + 1;
+    }
 }
 
 function td_right(html) {
@@ -43,30 +49,33 @@ function format_length(length) {
     return value && !value.endsWith("+") ? `${value}+` : value;
 }
 
+function plain_click(event) {
+    return event.button == 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+}
+
 function open_tower_row_link(event, id) {
-    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return true;
+    if (!plain_click(event)) return true;
     open_tower(id);
     return false;
 }
 
 function open_player_row_link(event, name, rank) {
-    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return true;
+    if (!plain_click(event)) return true;
     open_player(name, rank);
     return false;
 }
 
-function open_link_in_new_tab_on_middle_click(event, url) {
-    if (event.button !== 1) return;
+function middle_click(event, url) {
+    if (event.button != 1) return;
     event.preventDefault();
     window.open(url, "_blank", "noopener");
 }
 
 function tower_row(t, last, button = "tower-link", attrs = "") {
-    let tower_name = `<a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${t.name}</a>`;
     return `
         <tr ${attrs}>
             <td class="${diff_name(t.difficulty)}">#${t.rank}</td>
-            <td>${tower_name}</td>
+            <td><a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${t.name}</a></td>
             ${last}
         </tr>
     `;
@@ -74,15 +83,11 @@ function tower_row(t, last, button = "tower-link", attrs = "") {
 
 function player_row(name, rank, last, attrs = "") {
     let player = find_player(name);
-    let player_key = player ? (player_identifier(player) || player.username) : name;
-    let encoded_name = encodeURIComponent(player_key).replace(/'/g, "%27");
-    let player_name = player
-        ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>`
-        : role(name, true);
+    let encoded_name = encodeURIComponent(player ? player_identifier(player) : name).replace(/'/g, "%27");
     return `
         <tr data-name="${name.toLowerCase()}" ${attrs}>
             <td>#${rank}</td>
-            <td>${player_name}</td>
+            <td>${player ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>` : role(name, true)}</td>
             ${last}
         </tr>
     `;
@@ -151,7 +156,7 @@ function render_players() {
     let value = {
         xp: p => p.total_xp,
         completions: p => p.completions.length,
-        packs: p => Object.values(pack_victors).filter(names => names.includes(p.username)).length,
+        packs: p => pack_counts[p.username] || 0,
         hardest: p => player_hardest[p.username],
     }[sort] || (p => diff_counts[p.username][diff] || 0);
     let text = {
@@ -198,7 +203,7 @@ function render_packs() {
         towers: p => p.towers.length,
         hardest: p => pack_info[p.id].hardest,
         progress_towers_left: p => p.towers.length - done_count(p, player),
-        progress_percentage: p => p.towers.length !== 0 ? done_count(p, player) / p.towers.length : 0,
+        progress_percentage: p => p.towers.length ? done_count(p, player) / p.towers.length : 0,
         quality: p => quality_order[pack_info[p.id].avg_quality],
         victors: p => pack_victors[p.id].length,
     }[sort];
@@ -220,7 +225,7 @@ function render_packs() {
         return `
             <tr data-name="${pack.name.toLowerCase()}">
                 <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-                <td><button class="${done ? 'pack-link-done' : 'pack-link'}" onclick="open_pack('${pack.id}')" onmousedown="open_link_in_new_tab_on_middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
+                <td><button class="${done ? 'pack-link-done' : 'pack-link'}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
                 ${td_right(last(pack))}
             </tr>
         `;
@@ -321,6 +326,10 @@ function toggle_tower_creators() {
     $("#tower-creator").html(render_tower_creators(tower_lookup[current_tower_id].creators));
 }
 
+function show_info(selector, content, method = "html") {
+    $(selector)[method](content).toggle(Boolean(content));
+}
+
 function open_tower(id) {
     current_tower_id = id;
     tower_creators_expanded = false;
@@ -329,21 +338,24 @@ function open_tower(id) {
     let diff = diff_name(tower.difficulty);
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
 
+    let known_as = (field, label) => {
+        let names = tower[field]?.trim().replace(/,(?=\S)/g, ", ");
+        return names ? `${label}: ${names}` : "";
+    };
+
     $("#tower-name").html(`(${abbr(tower.name)}) ${tower.name}`);
-    let alternate_names = tower["alternate name(s)"]?.trim().replace(/,(?=\S)/g, ", ") ?? "";
-    $("#tower-alternate-names").text(alternate_names ? `also known as: ${alternate_names}` : "").toggle(Boolean(alternate_names));
-    let previous_names = tower["previous name(s)"]?.trim().replace(/,(?=\S)/g, ", ") ?? "";
-    $("#tower-previous-names").text(previous_names ? `previously known as: ${previous_names}` : "").toggle(Boolean(previous_names));
+    show_info("#tower-alternate-names", known_as("alternate name(s)", "also known as"), "text");
+    show_info("#tower-previous-names", known_as("previous name(s)", "previously known as"), "text");
     $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
     $("#tower-location").html(places_html(tower, 0, 1));
-    $("#tower-other-locations").html(tower.places.length > 1 ? `<i>Other Locations: ${places_html(tower, 1, tower.places.length)}</i>` : "").toggle(tower.places.length > 1);
+    show_info("#tower-other-locations", tower.places.length > 1 ? `<i>Other Locations: ${places_html(tower, 1, tower.places.length)}</i>` : "");
     $("#tower-rank").html(tower.rank);
     $("#tower-creator").html(tower.creators.length ? render_tower_creators(tower.creators) : "").parent().toggle(tower.creators.length > 0);
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
-    $("#tower-quality").html(tower.quality ? `Quality: <span class="${quality_cls(tower.quality)}">${tower.quality}</span>` : "").toggle(Boolean(tower.quality));
-    $("#tower-length").html(tower["time/length"] ? `Length: ${format_length(tower["time/length"])} minutes` : "").toggle(Boolean(tower["time/length"]));
-    $("#tower-packs").html(tower_packs.length ? `Packs: ${tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")}` : "").toggle(tower_packs.length > 0);
+    show_info("#tower-quality", tower.quality ? `Quality: <span class="${quality_cls(tower.quality)}">${tower.quality}</span>` : "");
+    show_info("#tower-length", tower["time/length"] ? `Length: ${format_length(tower["time/length"])} minutes` : "");
+    show_info("#tower-packs", tower_packs.length ? `Packs: ${tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")}` : "");
     $("#tower-id").html(id);
     $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
 }
@@ -386,33 +398,24 @@ function flag_html(x) {
 }
 
 function show_player_tower_view(view) {
-    let showing_packs = view == "packs";
-    let showing_creations = view == "creations";
-    $("#player-towers").toggleClass("hidden", showing_packs || showing_creations);
-    $("#player-packs").toggleClass("hidden", !showing_packs);
-    $("#player-creations").toggleClass("hidden", !showing_creations);
-    $("#player-completions-tab").toggleClass("active", !showing_packs && !showing_creations).attr("aria-pressed", String(!showing_packs && !showing_creations));
-    $("#player-packs-tab").toggleClass("active", showing_packs).attr("aria-pressed", String(showing_packs));
-    $("#player-creations-tab").toggleClass("active", showing_creations).attr("aria-pressed", String(showing_creations));
-    $("#player-creation-filters").toggleClass("hidden", !showing_creations);
+    let panes = {completions: "#player-towers", packs: "#player-packs", creations: "#player-creations"};
+    for (let [name, pane] of Object.entries(panes)) {
+        $(pane).toggleClass("hidden", name != view);
+        $(`#player-${name}-tab`).toggleClass("active", name == view).attr("aria-pressed", String(name == view));
+    }
+    $("#player-creation-filters").toggleClass("hidden", view != "creations");
 }
 
 function render_player_creations() {
-    let solo = $("#player-solo-creations").prop("checked");
-    let collaborations = $("#player-collaborations").prop("checked");
-    let solo_count = player_created_towers.filter(tower => tower.creators.length == 1).length;
-    let collaboration_count = player_created_towers.filter(tower => tower.creators.length > 1).length;
-    let created = player_created_towers.filter(tower => {
-        let is_solo = tower.creators.length == 1;
-        return (is_solo && solo) || (!is_solo && collaborations);
-    });
-    $("#player-solo-creations-count").text(solo_count);
-    $("#player-collaborations-count").text(collaboration_count);
-    $("#player-creations").html(created.map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`)).join(""));
+    let solo = player_created_towers.filter(t => t.creators.length == 1);
+    $("#player-solo-creations-count").text(solo.length);
+    $("#player-collaborations-count").text(player_created_towers.length - solo.length);
+    let shown = player_created_towers.filter(t => $(t.creators.length == 1 ? "#player-solo-creations" : "#player-collaborations").prop("checked"));
+    $("#player-creations").html(shown.map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`)).join(""));
 }
 
 function open_player(name, rank) {
-    let player = find_player(name) || players.find(p => String(player_identifier(p)) === String(name));
+    let player = find_player(name) || players.find(p => player_identifier(p) == name);
     if (!player) return;
     let username = player.username;
     current_player_name = username;
@@ -462,16 +465,17 @@ function open_player(name, rank) {
     $("#player-packs").html(completed_packs.length ? completed_packs.map(pack => `
         <tr>
             <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-            <td><button class="pack-link" onclick="open_pack('${pack.id}')" onmousedown="open_link_in_new_tab_on_middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
+            <td><button class="pack-link" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
             ${td_right(`${format_num(pack.xp)} XP`)}
         </tr>
     `).join("") : empty_row("No packs completed"));
     $("#player-completions-tab").text(`Completions (${completed.length})`);
     $("#player-packs-tab").text(`Packs (${completed_packs.length})`);
     $("#player-creations-tab").text(`Creations (${created.length})`);
-    $("#player-tower-view-title").toggleClass("hidden", created.length > 0 || completed_packs.length > 0);
-    $("#player-tower-views").toggleClass("hidden", created.length == 0 && completed_packs.length == 0);
-    $("#player-completions-tab").toggleClass("hidden", created.length == 0 && completed_packs.length == 0);
+    let has_tabs = created.length > 0 || completed_packs.length > 0;
+    $("#player-tower-view-title").toggleClass("hidden", has_tabs);
+    $("#player-tower-views").toggleClass("hidden", !has_tabs);
+    $("#player-completions-tab").toggleClass("hidden", !has_tabs);
     $("#player-packs-tab").toggleClass("hidden", completed_packs.length == 0);
     $("#player-creations-tab").toggleClass("hidden", created.length == 0); //this logic kinda ehhhhh
     show_player_tower_view("completions");

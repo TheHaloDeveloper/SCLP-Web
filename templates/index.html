@@ -57,7 +57,7 @@
             <div id="credits"></div>
             <footer class="site-footer">
                 <a href="/privacy-policy">Privacy Policy</a>
-                <span aria-hidden="true">&middot;</span>
+                <span aria-hidden="true">-</span>
                 <a href="/terms-of-service">Terms of Service</a>
             </footer>
         </div>
@@ -156,9 +156,9 @@
                             <label><input type="checkbox" id="player-solo-creations" checked> Solo projects (<span id="player-solo-creations-count">0</span>)</label>
                             <label><input type="checkbox" id="player-collaborations" checked> Collaborations (<span id="player-collaborations-count">0</span>)</label>
                         </div>
-                        <table id="player-towers"></table>
-                        <table id="player-packs" class="hidden"></table>
-                        <table id="player-creations" class="hidden"></table>
+                        <table id="player-towers" class="entries"></table>
+                        <table id="player-packs" class="entries hidden"></table>
+                        <table id="player-creations" class="entries hidden"></table>
                     </div>
                 </div>
             </div>
@@ -184,7 +184,7 @@
                         <p>Bonus XP: <span id="pack-bonus"></span></p>
                         <p>Victors: <span id="pack-victor-count"></span></p><br>
                         <p class="big">Towers</p>
-                        <table id="pack-towers"></table><br>
+                        <table id="pack-towers" class="entries"></table><br>
                         <p class="big">Victors</p>
                         <table id="pack-victors"></table>
                     </div>

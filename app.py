@@ -33,7 +33,7 @@ def get_data(r):
     return data
 
 diffs = [(900, "Insane"), (1000, "Extreme"), (1100, "Terrifying"), (1200, "Catastrophic"), (1300, "Horrific"), (1400, "Unreal"), (99999, "Nil")]
-player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("packs", "Packs Completed"), ("hardest", "Hardest Tower"),] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
+player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("packs", "Packs Completed"), ("hardest", "Hardest Tower")] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
 
 def diff_name(d):
     return next(name for limit, name in diffs if d < limit)
@@ -127,14 +127,12 @@ def build():
     diff_counts = {}
     player_towers = {}
 
+    player_packs = {}
     for player in players:
         done = set(player["completions"])
-        bonus = sum(
-            pack["xp"]
-            for pack in packs
-            if pack["towers"] and done.issuperset(pack["towers"])
-        )
-        player["total_xp"] = player["xp"] + bonus
+        finished = [pack for pack in packs if pack["towers"] and done.issuperset(pack["towers"])]
+        player_packs[player["username"]] = finished
+        player["total_xp"] = player["xp"] + sum(pack["xp"] for pack in finished)
 
     players.sort(key=lambda p: p["total_xp"], reverse=True)
     for rank, player in enumerate(players, 1):
@@ -154,10 +152,8 @@ def build():
         diff_counts[name] = counts
         player_towers[name] = [t["id"] for t in sorted(owned, key=lambda t: t["rank"])]
 
-        done = set(player["completions"])
-        for pack in packs:
-            if pack["towers"] and done.issuperset(pack["towers"]):
-                pack_victors[pack["id"]].append(name)
+        for pack in player_packs[name]:
+            pack_victors[pack["id"]].append(name)
 
     return {
         "players": players,
@@ -221,7 +217,6 @@ scotw_points = get_data("scotwpoints!A:B")
 def player_identity(player):
     return str(player.get("userid") or player.get("username", "")).strip()
 
-
 def level_of(xp):
     level = 0
     need = 175
@@ -230,7 +225,6 @@ def level_of(xp):
         level += 1
         need = 150 + 25 * (level + 1) ** 2
     return level
-
 
 def page_meta():
     meta = {"title": "SCLP Official", "description": "Soul Crushing Leaderboard Project"}
@@ -244,7 +238,7 @@ def page_meta():
         player = next((
             p for p in data["players"]
             if str(p.get("username", "")).lower() == target
-            or str(player_identity(p)).lower() == target
+            or player_identity(p).lower() == target
         ), None)
     tower = next((t for t in data["towers"] if str(t["id"]) == tower_id), None) if tower_id else None
     pack = next((p for p in data["packs"] if p["id"] == pack_id), None) if pack_id else None
