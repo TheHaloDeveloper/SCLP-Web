@@ -496,7 +496,7 @@ function open_player(name, rank) {
     }).join("");
     $("#player-stats").html(`
         <tr>
-            <th>TOTAL</th>
+            <th>Stats</th>
             <th>${got_all}/${total_all}</th>
             <th>${percent(got_all, total_all)}%</th>
         </tr>

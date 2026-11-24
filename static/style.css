@@ -597,6 +597,10 @@ body.legal-page {
     border-bottom: 1px solid #2a2e37;
 }
 
+#player-stats th:first-child {
+    text-align: left;
+}
+
 #player-stats td:nth-child(n+2), #player-stats th:nth-child(n+2) {
     text-align: right;
     width: 90px;
