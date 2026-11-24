@@ -304,11 +304,19 @@ def next_scotw(after):
         check += timedelta(days=7)
     return check.astimezone(timezone.utc)
 
+scotw_cache = {"time": 0, "value": None}
+
 @app.route("/get_scotw")
 def get_scotw():
-    scotw = get_data("scotw!A:B")[0]
-    start = datetime.fromtimestamp(int(scotw['Time']), tz=timezone.utc)
-    return jsonify({**scotw, "Target": int(next_scotw(start).timestamp())})
+    if time.time() - scotw_cache["time"] > 60:
+        try:
+            scotw = get_data("scotw!A:B")[0]
+            start = datetime.fromtimestamp(int(scotw['Time']), tz=timezone.utc)
+            scotw_cache.update(time=time.time(), value={**scotw, "Target": int(next_scotw(start).timestamp())})
+        except Exception:
+            if scotw_cache["value"] is None:
+                raise
+    return jsonify(scotw_cache["value"])
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False, port=5003)
