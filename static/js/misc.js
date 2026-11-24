@@ -82,15 +82,14 @@ function sub_range(d) {
 }
 
 function scale_layout() {
-    let designedWidth = 800;
-    let screenWidth = window.innerWidth;
-    let scale = Math.min(screenWidth / designedWidth, 1);
+    let width = window.innerWidth;
+    let scale = Math.min(width / 800, 1);
     let main = document.getElementById('main');
 
-    if (screenWidth < designedWidth) {
+    if (width < 800) {
         main.style.transform = `scale(${scale})`;
         main.style.transformOrigin = 'top left';
-        main.style.width = `${designedWidth}px`;
+        main.style.width = '800px';
         main.style.height = `${100 / scale}%`;
     } else {
         main.style.transform = '';
