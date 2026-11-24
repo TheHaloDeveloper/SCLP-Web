@@ -327,8 +327,8 @@ bind_sort("tower", "difficulty", "desc", render_towers);
 bind_sort("player", "xp", "desc", render_players);
 bind_sort("pack", "xp", "asc", render_packs);
 
-function places_html(tower, start, end) {
-    return tower.places.slice(start, end).map(([abbr, extra]) => {
+function places_html(tower) {
+    return tower.places.map(([abbr, extra]) => {
         let href = abbr == "Place" ? tower.game : game_lookup[abbr]?.link;
         return `<a href='${href}' target='_blank'>${extra ? `${abbr}, ${extra}` : abbr}</a>`;
     }).join(" / ");
@@ -359,16 +359,20 @@ function render_tower_creators(creators) {
         return player ? entity_link("u", player.username, c) : c;
     }).join(", ");
     let toggle = label => `<button type="button" class="link-button" onclick="toggle_tower_creators()">${label}</button>`;
-    if (creators.length <= 5) return `Created by: ${creator_links(creators)}`;
+    if (creators.length <= 5) return `${creator_links(creators)}`;
     if (tower_creators_expanded) {
-        return `Created by: ${creator_links(creators)} ${toggle("(Show Less)")}`;
+        return `${creator_links(creators)} ${toggle("(Show Less)")}`;
     }
-    return `Created by: ${creator_links(creators.slice(0, 4))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
+    return `${creator_links(creators.slice(0, 4))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
 }
 
 function toggle_tower_creators() {
     tower_creators_expanded = !tower_creators_expanded;
-    $("#tower-creator").html(render_tower_creators(tower_lookup[current_tower_id].creators));
+    $("#tower-creator").html(row_html("Creators", render_tower_creators(tower_lookup[current_tower_id].creators)));
+}
+
+function row_html(label, value) {
+    return `<span class="label">${label}</span><span>${value}</span>`;
 }
 
 function show_info(selector, content, method = "html") {
@@ -392,16 +396,14 @@ function open_tower(id) {
     show_info("#tower-alternate-names", known_as("alternate name(s)", "also known as"), "text");
     show_info("#tower-previous-names", known_as("previous name(s)", "previously known as"), "text");
     $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
-    $("#tower-location").html(places_html(tower, 0, 1));
-    show_info("#tower-other-locations", tower.places.length > 1 ? `<i>Other Locations: ${places_html(tower, 1, tower.places.length)}</i>` : "");
+    $("#tower-location").html(places_html(tower));
     $("#tower-rank").html(tower.rank);
-    $("#tower-creator").html(tower.creators.length ? render_tower_creators(tower.creators) : "").parent().toggle(tower.creators.length > 0);
+    show_info("#tower-creator", tower.creators.length ? row_html("Creators", render_tower_creators(tower.creators)) : "");
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
-    show_info("#tower-quality", tower.quality ? `Quality: <span class="${quality_cls(tower.quality)}">${tower.quality}</span>` : "");
-    show_info("#tower-length", tower["time/length"] ? `Length: ${format_length(tower["time/length"])} minutes` : "");
-    show_info("#tower-packs", tower_packs.length ? `Packs: ${tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")}` : "");
-    $("#tower-id").html(id);
+    show_info("#tower-quality", tower.quality ? row_html("Quality", `<span class="${quality_cls(tower.quality)}">${tower.quality}</span>`) : "");
+    show_info("#tower-length", tower["time/length"] ? row_html("Length", `${format_length(tower["time/length"])} minutes`) : "");
+    show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")) : "");
     $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
 }
 

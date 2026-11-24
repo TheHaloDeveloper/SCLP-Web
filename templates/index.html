@@ -94,19 +94,19 @@
                             <p class="small" id="tower-alternate-names"></p>
                             <p class="small" id="tower-previous-names"></p>
                         </div>
-                        <p>Difficulty: <span id="tower-diff"></span></p>
-                        <p>Location: <span id="tower-location"></span></p>
-                        <p class="small" id="tower-other-locations"></p>
-                        <p>Rank: #<span id="tower-rank"></span></p>
-                        <p><span id="tower-creator"></span></p>
-                        <p>XP for completion: <span id="tower-xp"></span></p>
-                        <p>Victors: <span id="tower-victor-count"></span></p>
-                        <p id="tower-quality"></p>
-                        <p id="tower-length"></p>
-                        <p id="tower-packs"></p>
-                        <p class="small"><i>Tower ID: <span id="tower-id"></span></i></p>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Difficulty</span><span class="stat-value" id="tower-diff"></span></div>
+                            <div class="stat"><span class="stat-label">Rank</span><span class="stat-value">#<span id="tower-rank"></span></span></div>
+                            <div class="stat"><span class="stat-label">Victors</span><span class="stat-value" id="tower-victor-count"></span></div>
+                        </div>
+                        <p class="row" id="tower-creator"></p>
+                        <p class="row"><span class="label">Location</span><span id="tower-location"></span></p>
+                        <p class="row"><span class="label">Completion XP</span><span id="tower-xp"></span></p>
+                        <p class="row" id="tower-quality"></p>
+                        <p class="row" id="tower-length"></p>
+                        <p class="row" id="tower-packs"></p>
 
-                        <p class="big">Victors</p>
+                        <p class="section-heading">Victors</p>
                         <table id="tower-victors"></table>
                     </div>
                 </div>
@@ -136,21 +136,23 @@
                     {# bad #}
                     <div class="card" id="player-details">
                         <p class="big" id="player-name"></p>
-                        <p id="player-role"></p><br>
+                        <p id="player-role"></p>
 
-                        <p>Total XP: <span id="player-xp"></span></p>
-                        <p>Level: <span id="player-level"></span></p>
-                        <p>Rank: <span id="player-rank"></span></p><br>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Rank</span><span class="stat-value" id="player-rank"></span></div>
+                            <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="player-level"></span></div>
+                            <div class="stat"><span class="stat-label">Total XP</span><span class="stat-value" id="player-xp"></span></div>
+                        </div>
 
-                        <p class="big">Stats</p>
-                        <table id="player-stats"></table><br>
+                        <p class="section-heading">Stats</p>
+                        <table id="player-stats"></table>
 
                         <div class="player-tower-views hidden" id="player-tower-views" role="group" aria-label="Player lists">
                             <button type="button" class="player-tower-tab active" id="player-completions-tab" aria-pressed="true" onclick="show_player_tower_view('completions')">Completions</button>
                             <button type="button" class="player-tower-tab" id="player-packs-tab" aria-pressed="false" onclick="show_player_tower_view('packs')">Packs</button>
                             <button type="button" class="player-tower-tab" id="player-creations-tab" aria-pressed="false" onclick="show_player_tower_view('creations')">Creations</button>
                         </div>
-                        <p class="big hidden" id="player-tower-view-title">Completions</p>
+                        <p class="section-heading hidden" id="player-tower-view-title">Completions</p>
                         <div class="player-creation-filters hidden" id="player-creation-filters">
                             <label><input type="checkbox" id="player-solo-creations" checked> Solo projects (<span id="player-solo-creations-count">0</span>)</label>
                             <label><input type="checkbox" id="player-collaborations" checked> Collaborations (<span id="player-collaborations-count">0</span>)</label>
@@ -179,12 +181,14 @@
                     </div>
                     <div class="card" id="pack-details">
                         <p class="big" id="pack-name"></p>
-                        <p>Progress: <span id="pack-progress"></span></p>
-                        <p>Bonus XP: <span id="pack-bonus"></span></p>
-                        <p>Victors: <span id="pack-victor-count"></span></p><br>
-                        <p class="big">Towers</p>
-                        <table id="pack-towers" class="entries"></table><br>
-                        <p class="big">Victors</p>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Progress</span><span class="stat-value" id="pack-progress"></span></div>
+                            <div class="stat"><span class="stat-label">Bonus XP</span><span class="stat-value" id="pack-bonus"></span></div>
+                            <div class="stat"><span class="stat-label">Victors</span><span class="stat-value" id="pack-victor-count"></span></div>
+                        </div>
+                        <p class="section-heading">Towers</p>
+                        <table id="pack-towers" class="entries"></table>
+                        <p class="section-heading">Victors</p>
                         <table id="pack-victors"></table>
                     </div>
                 </div>
