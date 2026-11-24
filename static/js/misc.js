@@ -128,8 +128,8 @@ let search_slots = {
 };
 
 let search_filters = {
-    "Towers": () => filter_towers(),
-    "Leaderboard": () => filter_players(),
+    "Towers": () => render_towers(),
+    "Leaderboard": () => render_players(),
     "Packs": () => filter_packs(),
     "SCoTW": () => filter_scotw(),
 };

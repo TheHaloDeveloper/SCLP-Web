@@ -3,6 +3,7 @@ let player_lookup = {};
 let game_lookup = {};
 let pack_info = {};
 let pack_counts = {};
+let tower_names = {};
 let victors_by_tower = {};
 let pack_victors = {};
 let player_hardest = {};
@@ -45,6 +46,7 @@ function build_lookups() {
     player_lookup = Object.fromEntries(players.map(p => [p.username, p]));
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
     derive_data();
+    tower_names = Object.fromEntries(towers.map(t => [t.id, [t.name.toLowerCase(), abbr(t.name).toLowerCase()]]));
 
     pack_info = Object.fromEntries(packs.map(p => [p.id, {
         hardest: hardest(p.towers),
@@ -107,11 +109,11 @@ function tower_row(t, last, button = "tower-link", attrs = "") {
     `;
 }
 
-function player_row(name, rank, last, attrs = "") {
+function player_row(name, rank, last) {
     let player = find_player(name);
     let encoded_name = encodeURIComponent(player ? player_identifier(player) : name).replace(/'/g, "%27");
     return `
-        <tr data-name="${name.toLowerCase()}" ${attrs}>
+        <tr data-name="${name.toLowerCase()}">
             <td>#${rank}</td>
             <td>${player ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>` : role(name, true)}</td>
             ${last}
@@ -125,6 +127,41 @@ function victor_rows(names, empty) {
         return player_row(name, p.rank, td_right(`Level ${level_text(p.total_xp, true)}`));
     }).join("");
     return rows || empty_row(empty);
+}
+
+let tables = {};
+let done_towers = new Set();
+
+function render_rows(table, items, row) {
+    tables[table] = {items, row, count: 0};
+    $("#" + table).empty();
+    more_rows(table);
+}
+
+function more_rows(table) {
+    let state = tables[table];
+    if (state.count >= state.items.length) return;
+    let next = state.items.slice(state.count, state.count + 100);
+    state.count += next.length;
+    $("#" + table).append(next.map(state.row).join(""));
+}
+
+$(".list").on("scroll", function () {
+    if (this.scrollTop + this.clientHeight < this.scrollHeight - 800) return;
+    let table = $(this).find("table").attr("id");
+    if (tables[table]) more_rows(table);
+});
+
+function done_ids() {
+    let player = checked_player();
+    return new Set(player ? player.completions : []);
+}
+
+function mark_done() {
+    done_towers = done_ids();
+    for (let row of document.getElementById("towers-table").rows) {
+        row.querySelector("a").className = `table-row-link ${done_towers.has(+row.dataset.id) ? "tower-link-done" : "tower-link"}`;
+    }
 }
 
 function render_towers() {
@@ -143,35 +180,19 @@ function render_towers() {
         length: t => format_length(t["time/length"]),
     }[sort];
 
-    let sorted_towers = towers.filter(t => {
-        if (sort == "quality") return t.quality != null;
-        if (sort == "length") return String(t["time/length"] || "").trim() != "";
-        return true;
-    });
-    sorted_towers.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
-
-    $("#towers-table").html(sorted_towers.map(t => tower_row(t, td_right(last(t)), "tower-link", `
-        data-id="${t.id}"
-        data-name="${t.name.toLowerCase()}"
-        data-abbr="${abbr(t.name).toLowerCase()}"
-        data-diff="${Math.floor(t.difficulty / 100)}"
-        data-places="${t.places.map(p => p[0]).join(",")}"
-    `)).join(""));
-    filter_towers();
-}
-
-function filter_towers() {
     let search = query();
     let place = $("#game-filter").val();
-    let player = checked_player();
-    let done = new Set(player ? player.completions : []);
     let allowed = [8, 9, 10, 11, 12, 13].filter(i => $("#diff-" + i).prop("checked"));
+    done_towers = done_ids();
 
-    filter_rows("towers-table", row => {
-        let {id, name, abbr, diff, places} = row.dataset;
-        row.querySelector(".tower-link, .tower-link-done").className = `table-row-link ${done.has(+id) ? "tower-link-done" : "tower-link"}`;
-        return (name.includes(search) || abbr.includes(search)) && allowed.includes(+diff) && (!place || places.split(",").includes(place));
+    let matches = towers.filter(t => {
+        if (sort == "quality" && t.quality == null) return false;
+        if (sort == "length" && String(t["time/length"] || "").trim() == "") return false;
+        let [name, abbr] = tower_names[t.id];
+        return (name.includes(search) || abbr.includes(search)) && allowed.includes(Math.floor(t.difficulty / 100)) && (!place || t.places.some(p => p[0] == place));
     });
+    matches.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
+    render_rows("towers-table", matches, t => tower_row(t, td_right(last(t)), done_towers.has(t.id) ? "tower-link-done" : "tower-link", `data-id="${t.id}"`));
 }
 
 function render_players() {
@@ -192,21 +213,19 @@ function render_players() {
         hardest: v => diff_span(v),
     }[sort] || (v => `<span class="${diff}">${v} ${diff}s</span>`);
 
-    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp);
-
-    $("#players-table").html(ranked.map((p, i) => {
-        let v = value(p);
-        if (v == 0 && (asc || diff)) return "";
-        return player_row(p.username, i + 1, td_right(text(v)), `data-nationality="${p.nationality || ""}"`);
-    }).join(""));
-    filter_players();
-}
-
-function filter_players() {
     let search = query();
     let country = $("#country-filter").val();
-    filter_rows("players-table", row => row.dataset.name.includes(search) && (!country || row.dataset.nationality == country));
+    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp);
+
+    let matches = [];
+    ranked.forEach((p, i) => {
+        let v = value(p);
+        if (v == 0 && (asc || diff)) return;
+        if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, v]);
+    });
+    render_rows("players-table", matches, ([p, rank, v]) => player_row(p.username, rank, td_right(text(v))));
 }
+
 function filter_packs() {
     let search = query();
     filter_rows("packs-table", row => row.dataset.name.includes(search));
@@ -276,14 +295,14 @@ function open_pack(id) {
     $("#pack-victors").html(victor_rows(names, "No pack victors yet"));
 }
 
-$("#game-filter, [id^=diff-]").on("input change", filter_towers);
+$("#game-filter, [id^=diff-]").on("input change", render_towers);
 $("#username").on("input", function () {
-    filter_towers();
+    mark_done();
     render_packs();
     localStorage.setItem("sclp-username", $(this).val());
 });
 $("#username").val(localStorage.getItem("sclp-username") || "");
-$("#country-filter").on("change", filter_players);
+$("#country-filter").on("change", render_players);
 
 function bind_sort(name, sort, dir, render) {
     let select = $(`#${name}-sort`);
