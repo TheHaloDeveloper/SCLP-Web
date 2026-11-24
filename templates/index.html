@@ -154,8 +154,11 @@
                         </div>
                         <p class="section-heading hidden" id="player-tower-view-title">Completions</p>
                         <div class="player-creation-filters hidden" id="player-creation-filters">
-                            <label><input type="checkbox" id="player-solo-creations" checked> Solo projects (<span id="player-solo-creations-count">0</span>)</label>
-                            <label><input type="checkbox" id="player-collaborations" checked> Collaborations (<span id="player-collaborations-count">0</span>)</label>
+                            <select id="player-creation-filter">
+                                <option value="all"></option>
+                                <option value="solo"></option>
+                                <option value="collab"></option>
+                            </select>
                         </div>
                         <table id="player-towers" class="entries"></table>
                         <table id="player-packs" class="entries hidden"></table>

@@ -455,10 +455,11 @@ function show_player_tower_view(view) {
 
 function render_player_creations() {
     let solo = player_created_towers.filter(t => t.creators.length == 1);
-    $("#player-solo-creations-count").text(solo.length);
-    $("#player-collaborations-count").text(player_created_towers.length - solo.length);
-    let shown = player_created_towers.filter(t => $(t.creators.length == 1 ? "#player-solo-creations" : "#player-collaborations").prop("checked"));
-    $("#player-creations").html(shown.map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`)).join(""));
+    $("#player-creation-filter option[value=all]").text(`All creations (${player_created_towers.length})`);
+    $("#player-creation-filter option[value=solo]").text(`Solo projects (${solo.length})`);
+    $("#player-creation-filter option[value=collab]").text(`Collaborations (${player_created_towers.length - solo.length})`);
+    let kind = $("#player-creation-filter").val();
+    $("#player-creations").html(player_created_towers.filter(t => kind == "all" || (kind == "solo") == (t.creators.length == 1)).map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`)).join(""));
 }
 
 function open_player(name, rank) {
@@ -502,7 +503,7 @@ function open_player(name, rank) {
     ` + diff_rows);
 
     let completed = player_towers[username];
-    $("#player-towers").html(completed.map(id => tower_row(tower_lookup[id], `<td>${diff_span(tower_lookup[id].difficulty)}</td>`)).join(""));
+    render_rows("player-towers", completed, id => tower_row(tower_lookup[id], `<td>${diff_span(tower_lookup[id].difficulty)}</td>`));
     let created = towers.filter(t => t.creators.some(creator => creator.toLowerCase() == username.toLowerCase()))
         .sort((a, b) => b.difficulty - a.difficulty || a.rank - b.rank);
     player_created_towers = created;
@@ -530,7 +531,11 @@ function open_player(name, rank) {
     add_badges(player, job);
 }
 
-$("#player-solo-creations, #player-collaborations").on("change", render_player_creations);
+$("#player-creation-filter").on("change", render_player_creations);
+
+$("#player-details").on("scroll", function () {
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 800) more_rows("player-towers");
+});
 
 $("#game-filter").html("<option value=''>All</option><option value='Place'>Place</option>");
 for (let game of games) {

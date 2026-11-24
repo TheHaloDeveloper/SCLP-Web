@@ -62,34 +62,34 @@ span {
 
 .player-tower-views {
     display: flex;
-    gap: 8px;
+    gap: 24px;
     width: 100%;
-    margin-bottom: 8px;
+    margin: 20px 0 14px;
+    border-bottom: 1px solid #303540;
 }
 
 .player-tower-tab {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 12px;
-    border: 1px solid #303540;
-    border-radius: 6px;
-    background: #252830;
+    padding: 6px 0;
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
     font: inherit;
+    opacity: 0.6;
+}
+
+.player-tower-tab:hover {
+    opacity: 1;
 }
 
 .player-tower-tab.active {
-    background: #363840;
-    border-color: #505A64;
+    border-bottom-color: #FFFFFF;
+    opacity: 1;
 }
 
 .player-creation-filters {
     display: flex;
-    gap: 16px;
-    margin-bottom: 8px;
-}
-
-.player-creation-filters label {
-    white-space: nowrap;
+    margin-bottom: 10px;
 }
 
 p {
@@ -174,7 +174,7 @@ p {
     flex: 55%;
 }
 
-#search, #username, #game-filter, #player-sort, #country-filter, #tower-sort, #pack-sort {
+#search, #username, #game-filter, #player-sort, #country-filter, #tower-sort, #pack-sort, #player-creation-filter {
     display: inline-block;
     vertical-align: middle;
     border: none;
@@ -407,7 +407,7 @@ p {
     white-space: nowrap;
 }
 
-#player-sort, #country-filter, #tower-sort, #game-filter, #pack-sort {
+#player-sort, #country-filter, #tower-sort, #game-filter, #pack-sort, #player-creation-filter {
     padding: 2px 10px 2px 15px;
     cursor: pointer;
 }
