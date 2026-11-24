@@ -1,7 +1,9 @@
 from flask import Flask, render_template, make_response, jsonify, request
 from dotenv import load_dotenv
 import os
+import json
 import math
+import hashlib
 import requests
 import pycountry
 import time
@@ -39,11 +41,18 @@ def diff_name(d):
     return next(name for limit, name in diffs if d < limit)
 
 @app.after_request
-def no_cache(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+def cache_headers(response):
+    if request.path.startswith("/static/") or request.path == "/favicon.ico":
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable" if "v" in request.args else "public, max-age=86400"
+    elif "Cache-Control" not in response.headers:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
+@app.context_processor
+def static_urls():
+    def static_v(name):
+        return f"/static/{name}?v={int(os.path.getmtime(os.path.join(app.static_folder, name)))}"
+    return {"static_v": static_v}
 
 @app.route("/favicon.ico")
 def favicon():
@@ -90,6 +99,8 @@ def parse_packs(raw, tower_by_id):
             packs.append({"id": pack["id"], "name": pack["name"], "towers": ids, "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
+tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "quality", "time/length", "alternate name(s)", "previous name(s)"]
+
 def build():
     with ThreadPoolExecutor(max_workers=4) as pool:
         players, towers, games, countries = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B"])
@@ -123,9 +134,6 @@ def build():
 
     victors_by_tower = {t["id"]: [] for t in towers}
     pack_victors = {p["id"]: [] for p in packs}
-    player_hardest = {}
-    diff_counts = {}
-    player_towers = {}
 
     player_packs = {}
     for player in players:
@@ -140,20 +148,21 @@ def build():
 
     for player in players:
         name = player["username"]
-        owned = [tower_by_id[tid] for tid in player["completions"] if tid in tower_by_id]
-        counts = {}
-
-        for tower in owned:
-            diff = diff_name(tower["difficulty"])
-            counts[diff] = counts.get(diff, 0) + 1
-            victors_by_tower[tower["id"]].append(name)
-
-        player_hardest[name] = max((t["difficulty"] for t in owned), default=0)
-        diff_counts[name] = counts
-        player_towers[name] = [t["id"] for t in sorted(owned, key=lambda t: t["rank"])]
+        for tid in player["completions"]:
+            if tid in tower_by_id:
+                victors_by_tower[tid].append(name)
 
         for pack in player_packs[name]:
             pack_victors[pack["id"]].append(name)
+
+    page = {
+        "players": players,
+        "towers": [{key: tower[key] for key in tower_fields if key in tower} for tower in towers],
+        "games": games,
+        "packs": packs,
+        "diff_totals": diff_totals,
+    }
+    script = "".join(f"{name}={json.dumps(value, separators=(',', ':'), ensure_ascii=False)};" for name, value in page.items())
 
     return {
         "players": players,
@@ -162,10 +171,8 @@ def build():
         "packs": packs,
         "victors_by_tower": victors_by_tower,
         "pack_victors": pack_victors,
-        "player_hardest": player_hardest,
-        "diff_counts": diff_counts,
-        "diff_totals": diff_totals,
-        "player_towers": player_towers,
+        "script": script,
+        "version": hashlib.md5(script.encode()).hexdigest()[:12],
     }
 
 for attempt in range(5):
@@ -269,8 +276,15 @@ def page_meta():
 
 @app.route("/")
 def home():
-    js = {**data, "cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs}
-    return render_template("index.html", js=js, diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+    js = {"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs}
+    return render_template("index.html", js=js, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+
+@app.route("/data.js")
+def data_js():
+    response = make_response(data["script"])
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable" if request.args.get("v") == data["version"] else "no-store"
+    return response
 
 @app.route("/privacy-policy")
 def privacy_policy():

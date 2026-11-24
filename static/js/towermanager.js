@@ -3,6 +3,11 @@ let player_lookup = {};
 let game_lookup = {};
 let pack_info = {};
 let pack_counts = {};
+let victors_by_tower = {};
+let pack_victors = {};
+let player_hardest = {};
+let diff_counts = {};
+let player_towers = {};
 let tower_creators_expanded = false;
 let player_created_towers = [];
 
@@ -14,10 +19,32 @@ function victors(id) {
     return victors_by_tower[id].length;
 }
 
+function derive_data() {
+    victors_by_tower = Object.fromEntries(towers.map(t => [t.id, []]));
+    pack_victors = Object.fromEntries(packs.map(p => [p.id, []]));
+    for (let p of players) {
+        let done = new Set(p.completions);
+        let owned = p.completions.map(id => tower_lookup[id]).filter(Boolean);
+        let counts = {};
+        for (let t of owned) {
+            let diff = diff_name(t.difficulty);
+            counts[diff] = (counts[diff] || 0) + 1;
+            victors_by_tower[t.id].push(p.username);
+        }
+        player_hardest[p.username] = owned.reduce((max, t) => Math.max(max, t.difficulty), 0);
+        diff_counts[p.username] = counts;
+        player_towers[p.username] = owned.sort((a, b) => a.rank - b.rank).map(t => t.id);
+        for (let pack of packs) {
+            if (pack.towers.length && pack.towers.every(id => done.has(id))) pack_victors[pack.id].push(p.username);
+        }
+    }
+}
+
 function build_lookups() {
     tower_lookup = Object.fromEntries(towers.map(t => [t.id, t]));
     player_lookup = Object.fromEntries(players.map(p => [p.username, p]));
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
+    derive_data();
 
     pack_info = Object.fromEntries(packs.map(p => [p.id, {
         hardest: hardest(p.towers),
@@ -26,7 +53,6 @@ function build_lookups() {
     }]));
     [...packs].sort((a, b) => b.xp - a.xp).forEach((p, i) => pack_info[p.id].rank = i + 1);
 
-    pack_counts = {};
     for (let names of Object.values(pack_victors)) {
         for (let name of names) pack_counts[name] = (pack_counts[name] || 0) + 1;
     }

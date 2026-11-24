@@ -23,8 +23,8 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/screens.css">
+    <link rel="stylesheet" href="{{ static_v('style.css') }}">
+    <link rel="stylesheet" href="{{ static_v('screens.css') }}">
 </head>
 <body>
 {% macro sort_box(name, options) %}
@@ -211,8 +211,9 @@
         {% endfor %}
     </script>
 
+    <script src="/data.js?v={{ version }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="/static/js/misc.js"></script>
-    <script src="/static/js/towermanager.js"></script>
+    <script src="{{ static_v('js/misc.js') }}"></script>
+    <script src="{{ static_v('js/towermanager.js') }}"></script>
 </body>
 </html>
