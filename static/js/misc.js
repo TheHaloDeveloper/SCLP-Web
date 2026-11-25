@@ -97,8 +97,11 @@ let pages = ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"];
 $("#nav-links").on("click", ".nav-link", function (e) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.which > 1) return;
     e.preventDefault();
+    $("#nav").removeClass("open");
     open_page($(this).data("page"));
 });
+
+$("#menu").on("click", () => $("#nav").toggleClass("open"));
 
 let current_page = "Home";
 let showing_detail = false;
@@ -128,6 +131,7 @@ function open_page(page_name, detail = false) {
     $(".nav-link").each(function () {
         $(this).toggleClass("active", $(this).data("page") == page_name);
     });
+    $("#menu-label").text(page_name);
     document.querySelector(".nav-link.active")?.scrollIntoView({inline: "center", block: "nearest"});
     for (let page of pages) {
         $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name).toggleClass("detail", detail);
@@ -223,5 +227,6 @@ $("#search").on("input", () => search_filters[current_page]?.());
 let scotw;
 
 $(document).on("click", e => {
+    if (!$(e.target).closest("#nav-links, #menu").length) $("#nav").removeClass("open");
     if (!$(e.target).closest("#account").length) $("#account").removeAttr("open");
 });

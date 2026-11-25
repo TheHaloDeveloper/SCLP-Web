@@ -143,7 +143,12 @@ p {
     gap: 12px;
 }
 
+#menu {
+    display: none;
+}
+
 #nav {
+    position: relative;
     background: #171a20;
     width: 100%;
     height: 56px;
@@ -1052,13 +1057,6 @@ body.legal-page {
         gap: 10px;
     }
 
-    .nav-link {
-        flex: 0 0 auto;
-        height: 32px;
-        padding: 0 11px;
-        font-size: 15px;
-    }
-
     #sign-in {
         height: 32px;
         padding: 0 10px;
@@ -1084,12 +1082,17 @@ body.legal-page {
         flex-basis: 160px;
     }
 
+    #player-sort, #country-filter, #tower-sort, #game-filter, #pack-sort {
+        padding: 0 28px 0 12px;
+        background-position: right 10px center;
+    }
+
     #game-filter {
         flex: 0 0 96px;
     }
 
     #country-filter {
-        flex: 0 0 132px;
+        flex: 0 0 150px;
     }
 
     .toolbar > div:has(.range) {
@@ -1258,5 +1261,53 @@ body.legal-page {
 
     #footer {
         padding: 12px 2px;
+    }
+}
+
+@media (max-width: 760px) {
+    #menu {
+        display: flex;
+        align-items: center;
+        height: 32px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 15px;
+    }
+
+    #menu::before {
+        content: "";
+        width: 16px;
+        height: 2px;
+        margin-right: 12px;
+        background: currentColor;
+        box-shadow: 0 5px currentColor, 0 -5px currentColor;
+    }
+
+    #nav-links {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        z-index: 10;
+        flex-direction: column;
+        overflow: visible;
+        padding: 6px;
+        background: #171a20;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        mask-image: none;
+    }
+
+    #nav.open #nav-links {
+        display: flex;
+    }
+
+    .nav-link {
+        height: 40px;
+        padding: 0 12px;
+        font-size: 16px;
     }
 }
