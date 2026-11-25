@@ -215,13 +215,11 @@ function render_players() {
 
     let search = query();
     let country = $("#country-filter").val();
-    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp);
+    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp).filter(p => value(p) != 0 || !(asc || diff));
 
     let matches = [];
     ranked.forEach((p, i) => {
-        let v = value(p);
-        if (v == 0 && (asc || diff)) return;
-        if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, v]);
+        if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, value(p)]);
     });
     render_rows("players-table", matches, ([p, rank, v]) => player_row(p.username, rank, td_right(text(v))));
 }
