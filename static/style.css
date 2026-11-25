@@ -1115,7 +1115,7 @@ body.legal-page {
         width: 52px;
     }
 
-    .tower-link, .player-link, .pack-link, .tower-link-done {
+    .tower-link, .player-link, .pack-link, .tower-link-done, .pack-link-done {
         font-size: 16px;
     }
 

@@ -117,7 +117,7 @@ function diff_row(t, button) {
 }
 
 function pack_button(pack, button = "pack-link") {
-    return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
+    return `<a class="table-row-link ${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
 }
 
 function player_row(name, rank, last) {
