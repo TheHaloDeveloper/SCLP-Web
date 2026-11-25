@@ -86,26 +86,6 @@ function sub_range(d) {
     return "Peak";
 }
 
-function scale_layout() {
-    let width = window.innerWidth;
-    let scale = Math.min(width / 800, 1);
-    let main = document.getElementById('main');
-
-    if (width < 800) {
-        main.style.transform = `scale(${scale})`;
-        main.style.transformOrigin = 'top left';
-        main.style.width = '800px';
-        main.style.height = `${100 / scale}%`;
-    } else {
-        main.style.transform = '';
-        main.style.width = '';
-        main.style.height = '';
-    }
-}
-
-window.addEventListener('resize', scale_layout);
-scale_layout();
-
 document.querySelectorAll("input").forEach(input => {
     input.setAttribute("autocomplete", "off");
     input.setAttribute("autocorrect", "off");
@@ -121,6 +101,7 @@ $("#nav-links").on("click", ".nav-link", function (e) {
 });
 
 let current_page = "Home";
+let showing_detail = false;
 let current_tower_id = null;
 let current_player_name = null;
 let current_player_id = null;
@@ -140,14 +121,16 @@ let search_filters = {
     "SCoTW": () => filter_scotw(),
 };
 
-function open_page(page_name) {
+function open_page(page_name, detail = false) {
     let changed = page_name != current_page;
     current_page = page_name;
+    showing_detail = detail;
     $(".nav-link").each(function () {
         $(this).toggleClass("active", $(this).data("page") == page_name);
     });
+    document.querySelector(".nav-link.active")?.scrollIntoView({inline: "center", block: "nearest"});
     for (let page of pages) {
-        $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name);
+        $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name).toggleClass("detail", detail);
     }
     if (changed && search_slots[page_name]) {
         $("#search").appendTo(search_slots[page_name]).val("");
@@ -157,13 +140,13 @@ function open_page(page_name) {
 
 function current_url() {
     let qs = null;
-    if (current_page == "Towers" && current_tower_id != null) {
+    if (showing_detail && current_page == "Towers") {
         qs = `t=${current_tower_id}`;
-    } else if (current_page == "Leaderboard" && current_player_name != null) {
+    } else if (showing_detail && current_page == "Leaderboard") {
         qs = `u=${encodeURIComponent(current_player_id)}`;
-    } else if (current_page == "Packs" && current_pack_id != null) {
+    } else if (showing_detail && current_page == "Packs") {
         qs = `pk=${current_pack_id}`;
-    } else if (current_page == "Home" || current_page == "SCoTW") {
+    } else {
         qs = `page=${current_page.toLowerCase()}`;
     }
     return qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
@@ -232,6 +215,8 @@ function update_timer() {
     $("#scotw-timer").text(`Next tower in: ${days}d ${hours}h ${minutes}m ${seconds}s`);
     setTimeout(update_timer, 1000);
 }
+
+$(document).on("click", ".back", () => open_page(current_page));
 
 $("#search").on("input", () => search_filters[current_page]?.());
 

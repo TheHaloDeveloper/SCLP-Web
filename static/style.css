@@ -61,6 +61,8 @@ span {
 }
 
 .player-tower-views {
+    flex-shrink: 0;
+    overflow-x: auto;
     display: flex;
     gap: 24px;
     width: 100%;
@@ -69,6 +71,7 @@ span {
 }
 
 .player-tower-tab {
+    white-space: nowrap;
     padding: 6px 0;
     margin-bottom: -1px;
     border: 0;
@@ -97,6 +100,7 @@ p {
 }
 
 .big {
+    overflow-wrap: anywhere;
     font-size: 30px;
     font-weight: bold;
     margin: 5px 0 5px 0 !important;
@@ -154,10 +158,21 @@ p {
 
 #nav-links {
     display: flex;
+    flex: 1 1 auto;
     gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+}
+
+#nav-links::-webkit-scrollbar {
+    display: none;
 }
 
 #nav-right {
+    flex: 0 0 auto;
+    padding-left: 8px;
     margin-left: auto;
     display: flex;
     align-items: center;
@@ -165,6 +180,7 @@ p {
 }
 
 .left, .right {
+    min-width: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -277,14 +293,7 @@ p {
 }
 
 .player-link {
-    width: 15em;
-    overflow-x: scroll;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.player-link::-webkit-scrollbar {
-    display: none;
+    width: 100%;
 }
 
 .tower-link:hover, .tower-link-done:hover, .player-link:hover, .pack-link:hover, .pack-link-done:hover {
@@ -385,6 +394,7 @@ p {
 }
 
 .panel {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -725,6 +735,10 @@ body.legal-page {
 }
 
 #account summary {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     padding: 0 4px;
     font-size: 16px;
     list-style: none;
@@ -784,6 +798,7 @@ body.legal-page {
 .quality-f { color: #7FFFFF; }
 
 .toolbar {
+    container-type: inline-size;
     display: flex;
     flex-wrap: wrap;
     gap: 14px 12px;
@@ -959,5 +974,289 @@ body.legal-page {
 }
 
 .range-names span {
+    min-width: 0;
+    overflow: hidden;
     text-align: center;
+}
+
+@container (max-width: 560px) {
+    .range-names {
+        font-size: 11px;
+    }
+}
+
+@container (max-width: 420px) {
+    .range-names {
+        display: none;
+    }
+}
+
+.back {
+    display: none;
+    align-self: flex-start;
+    margin-bottom: 14px;
+    padding: 6px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 15px;
+}
+
+@media (max-width: 1000px) {
+    .left, .right {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .right, .detail .left {
+        display: none;
+    }
+
+    .detail .right {
+        display: flex;
+    }
+
+    .back {
+        display: block;
+    }
+
+    #home-page {
+        padding: 32px 16px;
+    }
+
+    #home-page h1 {
+        font-size: 2.2em;
+    }
+
+    #scotw-page {
+        padding: 24px 0;
+    }
+}
+
+@media (max-width: 640px) {
+    html {
+        font-size: 16px;
+    }
+
+    body {
+        padding: 8px;
+    }
+
+    #nav {
+        height: 48px;
+        margin-bottom: 8px;
+        padding: 0 6px;
+    }
+
+    #nav-right {
+        gap: 10px;
+    }
+
+    .nav-link {
+        flex: 0 0 auto;
+        height: 32px;
+        padding: 0 11px;
+        font-size: 15px;
+    }
+
+    #sign-in {
+        height: 32px;
+        padding: 0 10px;
+        font-size: 15px;
+    }
+
+    #account summary {
+        font-size: 15px;
+        max-width: 110px;
+    }
+
+    #account-menu {
+        top: calc(100% + 10px);
+    }
+
+    .toolbar {
+        padding: 12px;
+        gap: 12px 8px;
+        margin-bottom: 8px;
+    }
+
+    .sort-row {
+        flex-basis: 160px;
+    }
+
+    #game-filter {
+        flex: 0 0 96px;
+    }
+
+    #country-filter {
+        flex: 0 0 132px;
+    }
+
+    .toolbar > div:has(.range) {
+        min-width: 0;
+    }
+
+    .left, .right {
+        gap: 0;
+    }
+
+    #towers-page, #leaderboard-page, #packs-page {
+        gap: 8px;
+    }
+
+    #towers-table, #players-table, #packs-table {
+        border-spacing: 8px 4px;
+    }
+
+    #towers-table td:first-child, #players-table td:first-child, #packs-table td:first-child {
+        width: 52px;
+    }
+
+    #towers-table tr td:last-child {
+        width: 52px;
+    }
+
+    .tower-link, .player-link, .pack-link, .tower-link-done {
+        font-size: 16px;
+    }
+
+    #tower-details, #player-details, #pack-details {
+        padding: 14px;
+        font-size: 16px;
+    }
+
+    .big {
+        font-size: 22px;
+    }
+
+    .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .stat {
+        flex: 1 1 0;
+        min-width: min-content;
+        padding: 10px 12px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+        white-space: nowrap;
+    }
+
+    #tower-diff, #player-level {
+        white-space: normal;
+    }
+
+    .stat .stat-label {
+        font-size: 13px;
+    }
+
+    .row {
+        grid-template-columns: 112px 1fr;
+        gap: 8px;
+    }
+
+    .section-heading {
+        font-size: 18px;
+    }
+
+    .player-tower-views {
+        gap: 14px;
+    }
+
+    .player-tower-tab {
+        flex: 0 0 auto;
+        font-size: 14px;
+    }
+
+    #tower-victors, #pack-victors {
+        table-layout: fixed;
+    }
+
+    #tower-victors td:first-child {
+        width: 56px;
+    }
+
+    #tower-victors td:last-child {
+        width: 84px;
+        text-align: right;
+    }
+
+    .entries td:first-child {
+        width: 56px;
+    }
+
+    .entries td:last-child {
+        width: 84px;
+    }
+
+    #pack-victors td:first-child {
+        width: 56px;
+    }
+
+    #pack-victors td:last-child {
+        width: 84px;
+    }
+
+    #player-stats td:nth-child(n+2), #player-stats th:nth-child(n+2) {
+        width: 70px;
+    }
+
+    #home-page h1 {
+        font-size: 1.8em;
+    }
+
+    #home-page h2 {
+        font-size: 1em;
+        margin-bottom: 24px;
+    }
+
+    #home-page h2 a {
+        padding: 10px 16px;
+    }
+
+    #scotw-container {
+        gap: 20px;
+    }
+
+    #scotw-title {
+        font-size: 1.6em;
+        letter-spacing: 1px;
+    }
+
+    #scotw-title .tower-link {
+        white-space: normal;
+        padding: 0;
+    }
+
+    #scotw-timer {
+        font-size: 1em;
+    }
+
+    #scotw-leaderboard {
+        padding: 10px;
+    }
+
+    #scotw-table td:first-child {
+        width: 52px;
+    }
+
+    #scotw-table td:last-child {
+        width: 84px;
+    }
+
+    .legal-content {
+        padding: 20px 16px;
+    }
+
+    .legal-content h1 {
+        font-size: 24px;
+    }
+
+    #footer {
+        padding: 12px 2px;
+    }
 }

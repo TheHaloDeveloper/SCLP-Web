@@ -281,7 +281,7 @@ function render_packs() {
 
 function open_pack(id) {
     current_pack_id = id;
-    open_page("Packs");
+    open_page("Packs", true);
     let pack = packs.find(p => p.id == id);
     let player = checked_player();
     let names = pack_victors[id];
@@ -424,7 +424,7 @@ function show_info(selector, content, method = "html") {
 function open_tower(id) {
     current_tower_id = id;
     tower_creators_expanded = false;
-    open_page("Towers");
+    open_page("Towers", true);
     let tower = tower_lookup[id];
     let diff = diff_name(tower.difficulty);
 
@@ -510,7 +510,7 @@ function open_player(name, rank) {
     let username = player.username;
     current_player_name = username;
     current_player_id = player_identifier(player);
-    open_page("Leaderboard");
+    open_page("Leaderboard", true);
     let job = role(username);
     let counts = diff_counts[username];
     let sum = (a, b) => a + b;
