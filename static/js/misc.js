@@ -110,9 +110,11 @@ document.querySelectorAll("input").forEach(input => {
 });
 
 let pages = ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"];
-for (let page of pages) {
-    $("#nav-links").append(`<button class="nav-link" data-page="${page}" onclick="open_page('${page}')" onmousedown="middle_click(event, '/?page=${page.toLowerCase()}')">${page}</button>`);
-}
+$("#nav-links").on("click", ".nav-link", function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.which > 1) return;
+    e.preventDefault();
+    open_page($(this).data("page"));
+});
 
 let current_page = "Home";
 let current_tower_id = null;
@@ -231,16 +233,6 @@ $("#search").on("input", () => search_filters[current_page]?.());
 
 let scotw;
 
-$("#account-name").on("click", function (e) {
-    e.stopPropagation();
-    $("#account-menu").toggleClass("hidden");
-});
-$("#account-profile").on("click", function () {
-    $("#account-menu").addClass("hidden");
-    open_player(checked_player().username);
-});
-$(document).on("click", () => $("#account-menu").addClass("hidden"));
-
-document.getElementById('discord').addEventListener('click', function() {
-    window.open('https://discord.gg/t9crQndHyn', '_blank');
+$(document).on("click", e => {
+    if (!$(e.target).closest("#account").length) $("#account").removeAttr("open");
 });

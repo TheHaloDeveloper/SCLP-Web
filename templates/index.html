@@ -1,32 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Q064ZHL1Q"></script>
-    <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-8Q064ZHL1Q');
-    </script>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ meta.title }}</title>
-    <meta name="description" content="{{ meta.description }}">
-    <meta property="og:site_name" content="SCLP Official">
-    <meta property="og:title" content="{{ meta.title }}">
-    <meta property="og:description" content="{{ meta.description }}">
-    <meta property="og:image" content="{{ url_for('static', filename='images/sclp.png', _external=True) }}">
-    <meta name="twitter:card" content="summary">
-
+{% extends "base.html" %}
+{% block head %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
-    <link rel="stylesheet" href="{{ static_v('style.css') }}">
-    <link rel="stylesheet" href="{{ static_v('screens.css') }}">
-</head>
-<body>
+{% endblock %}
+{% block body %}
 {% macro sort_box(name, options) %}
 <div class="sort-row">
     <select id="{{ name }}-sort">
@@ -36,33 +12,13 @@
 </div>
 {% endmacro %}
     <div id="main">
-        <div id="nav">
-            <div id="nav-links"></div>
-            <div id="nav-right">
-                {% if user %}
-                <div id="account">
-                    <button type="button" id="account-name">{{ user.name }}</button>
-                    <div id="account-menu" class="hidden">
-                        <button type="button" id="account-profile">Profile</button>
-                        <a href="/logout">Sign out</a>
-                    </div>
-                </div>
-                {% else %}
-                <a href="/login" id="sign-in">Sign in</a>
-                {% endif %}
-                <img src="/static/images/discord.webp" id="discord">
-            </div>
-        </div>
+        {% include "nav.html" %}
         <div id="home-page" class="hidden">
             <h1>Soul Crushing Leaderboard Project</h1>
             <h2>
                 <a href="https://discord.gg/t9crQndHyn" target="_blank">Join the Discord Server to submit completions</a>
             </h2>
             <div id="credits"></div>
-            <footer class="site-footer">
-                <a href="/privacy-policy">Privacy Policy</a>
-                <a href="/terms-of-service">Terms of Service</a>
-            </footer>
         </div>
         <div id="towers-page" class="hidden">
             <div class="left">
@@ -217,6 +173,7 @@
             </div>
         </div>
     </div>
+    {% include "footer.html" %}
 
     <script>
         {% for name, value in js.items() %}{{ name }} = {{ value | tojson }};
@@ -227,5 +184,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="{{ static_v('js/misc.js') }}"></script>
     <script src="{{ static_v('js/towermanager.js') }}"></script>
-</body>
-</html>
+{% endblock %}

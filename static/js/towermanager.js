@@ -592,7 +592,6 @@ window.addEventListener('popstate', event => restore(() => {
 
 show_range();
 build_lookups();
-$("#account-profile").toggle(Boolean(checked_player()));
 render_towers();
 render_players();
 render_packs();

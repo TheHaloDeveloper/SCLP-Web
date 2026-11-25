@@ -59,7 +59,9 @@ def cache_headers(response):
 def static_urls():
     def static_v(name):
         return f"/static/{name}?v={int(os.path.getmtime(os.path.join(app.static_folder, name)))}"
-    return {"static_v": static_v}
+    user = session.get("user")
+    profile = next((player_identity(p) for p in data["players"] if user and (str(p.get("userid", "")) == user["id"] or str(p.get("username", "")).lower() == user["name"].lower())), None)
+    return {"static_v": static_v, "user": user, "profile": profile, "nav_pages": ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"]}
 
 @app.route("/favicon.ico")
 def favicon():
@@ -277,7 +279,7 @@ def page_meta():
 @app.route("/")
 def home():
     user = session.get("user")
-    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta(), user=user)
+    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
 
 @app.route("/data.js")
 def data_js():

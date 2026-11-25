@@ -6,13 +6,13 @@
 
 html {
     font-size: 20px;
+    overflow-y: auto;
     background: #0f1115;
     color: #FFFFFF;
     font-family: "Montserrat", sans-serif;
 }
 
 html, body {
-    overflow: hidden;
     overscroll-behavior: none;
     height: 100%;
 }
@@ -200,6 +200,9 @@ p {
 }
 
 .nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -458,7 +461,7 @@ p {
     opacity: 0.9;
 }
 
-#home-page h2 a, .site-footer a {
+#home-page h2 a {
     padding: 12px 24px;
     background: #2a2d35;
     border: 1px solid #40454f;
@@ -467,24 +470,24 @@ p {
     text-decoration: none;
 }
 
-#home-page h2 a:hover, .site-footer a:hover {
+#home-page h2 a:hover {
     background: #363840;
 }
 
-.site-footer {
+#footer {
     display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 40px;
-    font-size: 0.9em;
-    opacity: 0.9;
+    gap: 20px;
+    padding: 12px 4px;
+    font-size: 14px;
 }
 
-.site-footer a {
-    padding: 8px 18px;
+#footer a {
+    color: #a0a8b0;
+    text-decoration: none;
 }
 
 body.legal-page {
+    padding-bottom: 0;
     height: auto;
     min-height: 100%;
     overflow-y: visible;
@@ -492,20 +495,28 @@ body.legal-page {
 }
 
 .legal-content {
-    width: min(900px, calc(100% - 40px));
-    margin: 40px auto;
-    padding: 40px;
+    width: 100%;
+    padding: 32px;
     font-size: 16px;
-    line-height: 1.7;
+    line-height: 1.6;
+}
+
+.legal-content > * {
+    max-width: 760px;
 }
 
 .legal-content h1 {
-    margin-top: 18px;
+    margin: 0 0 4px;
+    font-size: 30px;
 }
 
 .legal-content h2 {
-    margin-top: 28px;
-    font-size: 22px;
+    margin: 28px 0 6px;
+    font-size: 20px;
+}
+
+.legal-content p {
+    margin: 0 0 10px;
 }
 
 .legal-content ul {
@@ -514,10 +525,6 @@ body.legal-page {
 
 .legal-effective {
     color: #a0a8b0;
-}
-
-.legal-back {
-    font-size: 14px;
 }
 
 .badge {
@@ -619,7 +626,7 @@ body.legal-page {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    height: calc(100% - 50px);
+    min-height: 0;
     padding: 40px;
     overflow-y: auto;
 }
@@ -696,6 +703,7 @@ body.legal-page {
 }
 
 #discord {
+    display: block;
     width: 30px;
     cursor: pointer;
 }
@@ -716,14 +724,15 @@ body.legal-page {
     position: relative;
 }
 
-#account-name, #account-menu button, #account-menu a {
-    border: none;
-    background: none;
+#account summary {
+    padding: 0 4px;
     font-size: 16px;
+    list-style: none;
+    cursor: pointer;
 }
 
-#account-name {
-    padding: 0 4px;
+#account summary::-webkit-details-marker {
+    display: none;
 }
 
 #account-menu {
@@ -740,14 +749,14 @@ body.legal-page {
     border-radius: 8px;
 }
 
-#account-menu button, #account-menu a {
+#account-menu a {
     padding: 8px 12px;
     border-radius: 6px;
     text-align: left;
     text-decoration: none;
 }
 
-#account-menu button:hover, #account-menu a:hover {
+#account-menu a:hover {
     background: rgba(255, 255, 255, 0.06);
 }
 
