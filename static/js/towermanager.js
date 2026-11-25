@@ -518,7 +518,7 @@ function open_player(name, rank) {
     let job = role(username);
     let counts = diff_counts[username];
     let sum = (a, b) => a + b;
-    let percent = (got, total) => total ? +(got / total * 100).toFixed(2) : 0;
+    let percent = (got, total) => (total ? got / total * 100 : 0).toFixed(2);
     let got_all = Object.values(counts).reduce(sum, 0);
     let total_all = Object.values(diff_totals).reduce(sum, 0);
 
