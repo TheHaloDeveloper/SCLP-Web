@@ -28,14 +28,12 @@
 </head>
 <body>
 {% macro sort_box(name, options) %}
-<label>Sort by:
-    <div class="sort-row">
-        <select id="{{ name }}-sort">
-            {% for value, label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-        </select>
-        <button type="button" id="{{ name }}-sort-dir" class="sort-dir" title="Toggle sort direction"></button>
-    </div>
-</label>
+<div class="sort-row">
+    <select id="{{ name }}-sort">
+        {% for value, label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+    <button type="button" id="{{ name }}-sort-dir" class="sort-dir" title="Toggle sort direction"></button>
+</div>
 {% endmacro %}
     <div id="main">
         <div id="nav">
@@ -62,31 +60,38 @@
         </div>
         <div id="towers-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="towers-search">
+                        <input type="text" id="search" placeholder="Search...">
+                    </div>
+                    <div class="toolbar-row">
+                        {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
+                        <select id="game-filter"></select>
+                    </div>
+                    <div>
+                        <div class="range-head">
+                            <span>Difficulty</span>
+                            <span id="diff-range-label"></span>
+                        </div>
+                        <div class="range">
+                            <div class="range-track">
+                                <div class="range-dim" id="range-dim-low"></div>
+                                <div class="range-dim" id="range-dim-high"></div>
+                            </div>
+                            <input type="range" id="diff-min" min="800" max="1399" value="800">
+                            <input type="range" id="diff-max" min="800" max="1399" value="1399">
+                        </div>
+                        <div class="range-names">
+                            {% for d in diffs[:6] %}<span>{{ d[1] }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
                 <div class="list">
                     <table id="towers-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>The List</h1>
-                        <div class="filter" id="towers-search">
-                            <input type="text" id="search" placeholder="Search...">
-                        </div>
-                        <div class="filter">
-                            <p>Difficulty:</p>
-                            <div class="diff-checks">
-                                {% for d in diffs[:6] %}<label><input type="checkbox" id="diff-{{ loop.index + 7 }}" checked> {{ d[1] }}</label>{% endfor %}
-                            </div>
-                        </div>
-                        <div class="filter">
-                            <label>Game:
-                                <select id="game-filter"></select>
-                            </label>
-                            {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
-                        </div>
-                    </div>
-
                     {# i hate how this structure is setup, gonna full refactor this #}
                     <div class="card" id="tower-details">
                         <div id="tower-name-group">
@@ -114,25 +119,21 @@
         </div>
         <div id="leaderboard-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="players-search"></div>
+                    <div class="toolbar-row">
+                        {{ sort_box("player", player_sorts) }}
+                        <select id="country-filter">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="list">
                     <table id="players-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>The Top Obbyists</h1>
-                        <div class="filter" id="players-search"></div>
-                        <div class="filter filter-right">
-                            {{ sort_box("player", player_sorts) }}
-                            <label>Country:
-                                <select id="country-filter">
-                                    <option value="">All Countries</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-
                     {# bad #}
                     <div class="card" id="player-details">
                         <p class="big" id="player-name"></p>
@@ -168,19 +169,18 @@
         </div>
         <div id="packs-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="packs-search"></div>
+                    <div class="toolbar-row">
+                        {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
+                    </div>
+                </div>
                 <div class="list">
                     <table id="packs-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>Packs</h1>
-                        <div class="filter" id="packs-search"></div>
-                        <div class="filter filter-right">
-                            {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
-                        </div>
-                    </div>
                     <div class="card" id="pack-details">
                         <p class="big" id="pack-name"></p>
                         <div class="stats">

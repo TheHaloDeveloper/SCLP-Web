@@ -172,6 +172,10 @@ function mark_done() {
     }
 }
 
+function diff_range() {
+    return [+$("#diff-min").val(), +$("#diff-max").val()];
+}
+
 function render_towers() {
     let sort = $("#tower-sort").val() || "difficulty";
     let sign = $("#tower-sort-dir").attr("data-dir") == "asc" ? -1 : 1;
@@ -190,14 +194,14 @@ function render_towers() {
 
     let search = query();
     let place = $("#game-filter").val();
-    let allowed = [8, 9, 10, 11, 12, 13].filter(i => $("#diff-" + i).prop("checked"));
+    let [low, high] = diff_range();
     done_towers = done_ids();
 
     let matches = towers.filter(t => {
         if (sort == "quality" && t.quality == null) return false;
         if (sort == "length" && String(t["time/length"] || "").trim() == "") return false;
         let [name, abbr] = tower_names[t.id];
-        return (name.includes(search) || abbr.includes(search)) && allowed.includes(Math.floor(t.difficulty / 100)) && (!place || t.places.some(p => p[0] == place));
+        return (name.includes(search) || abbr.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
     matches.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
     render_rows("towers-table", matches, t => tower_row(t, td_right(last(t)), done_towers.has(t.id) ? "tower-link-done" : "tower-link", `data-id="${t.id}"`));
@@ -303,7 +307,19 @@ function open_pack(id) {
     $("#pack-victors").html(victor_rows(names, "No pack victors yet"));
 }
 
-$("#game-filter, [id^=diff-]").on("input change", render_towers);
+function show_range() {
+    let [low, high] = diff_range();
+    $("#diff-range-label").text(`${format_num(low / 100)} - ${format_num(high / 100)}`);
+    $("#range-dim-low").css("width", `${(low - 800) / 599 * 100}%`);
+    $("#range-dim-high").css("width", `${(1399 - high) / 599 * 100}%`);
+}
+
+$("#diff-min, #diff-max").on("input", function () {
+    let [low, high] = diff_range();
+    if (low > high) $(this.id == "diff-min" ? "#diff-max" : "#diff-min").val(this.value);
+    show_range();
+});
+$("#game-filter, #diff-min, #diff-max").on("input", render_towers);
 $("#username").on("input", function () {
     mark_done();
     render_packs();
@@ -556,6 +572,7 @@ window.addEventListener('popstate', event => restore(() => {
     }
 }));
 
+show_range();
 build_lookups();
 render_towers();
 render_players();
