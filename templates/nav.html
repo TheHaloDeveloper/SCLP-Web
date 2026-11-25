@@ -1,0 +1,20 @@
+<div id="nav">
+    <button type="button" id="menu"><span id="menu-label"></span></button>
+    <div id="nav-links">
+        {% for page in nav_pages %}<a class="nav-link" href="/?page={{ page | lower }}" data-page="{{ page }}">{{ page }}</a>{% endfor %}
+    </div>
+    <div id="nav-right">
+        {% if user %}
+        <details id="account">
+            <summary>{{ user.name }}</summary>
+            <div id="account-menu">
+                {% if profile %}<a href="/?u={{ profile | urlencode }}" data-open="u" data-key="{{ profile | urlencode }}">Profile</a>{% endif %}
+                <a href="/logout">Sign out</a>
+            </div>
+        </details>
+        {% else %}
+        <a href="/login" id="sign-in">Sign in</a>
+        {% endif %}
+        <a href="https://discord.gg/t9crQndHyn" target="_blank"><img src="/static/images/discord.webp" id="discord"></a>
+    </div>
+</div>

@@ -1,9 +1,12 @@
-from flask import Flask, render_template, make_response, jsonify, request
+from flask import Flask, render_template, make_response, jsonify, request, session, redirect, url_for
 from dotenv import load_dotenv
 import os
 import json
 import math
 import hashlib
+import base64
+import secrets
+from urllib.parse import urlencode
 import requests
 import pycountry
 import time
@@ -11,13 +14,20 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from werkzeug.middleware.proxy_fix import ProxyFix
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.secret_key = hashlib.sha256(f"session-{os.environ['ROBLOX_CLIENT_SECRET']}".encode()).hexdigest()
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 
 def get_data(r):
     url = f"https://sheets.googleapis.com/v4/spreadsheets/1PCndMCuQkslsWITs19Q2YaLFa16XnpUZzts4npzCjtE/values/{r}?key={os.getenv('GOOGLE_SHEETS_API_KEY')}" # will set up a db for a lot of this stuff later
-    values = requests.get(url, timeout=20).json().get("values", [])
+    res = requests.get(url, timeout=20)
+    if not res.ok:
+        raise RuntimeError(f"sheets request for {r} failed with {res.status_code}")
+    values = res.json().get("values", [])
     if len(values) < 2:
         return []
 
@@ -52,7 +62,9 @@ def cache_headers(response):
 def static_urls():
     def static_v(name):
         return f"/static/{name}?v={int(os.path.getmtime(os.path.join(app.static_folder, name)))}"
-    return {"static_v": static_v}
+    user = session.get("user")
+    profile = next((player_identity(p) for p in data["players"] if user and (str(p.get("userid", "")) == user["id"] or str(p.get("username", "")).lower() == user["name"].lower())), None)
+    return {"static_v": static_v, "user": user, "profile": profile, "nav_pages": ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"]}
 
 @app.route("/favicon.ico")
 def favicon():
@@ -81,19 +93,13 @@ def parse_packs(raw, tower_by_id):
     for pack in raw:
         if pack["id"]:
             ids = [int(pack[f"tower{i}"]) for i in range(1, 11) if pack[f"tower{i}"] != ""]
-            
-            # Map valid IDs to their corresponding completion XP values from the sheet
+
             base_scores = [tower_by_id[tid]["xp"] for tid in ids if tid in tower_by_id]
             n = len(base_scores)
-            
+
             if n > 0:
-                # Applies a 1.5 Power Mean to use a dynamic weighted average instead of a simply average for xp calculation. Ensures pack xp is not pulled down by easier towers.
-                power_sum = sum(pow(score, 1.5) for score in base_scores) # Changing this number will change the intensity of the right-skewed distribution
-                power_mean = pow(power_sum / n, 1 / 1.5)
-                
-                # Provides a multiplier based on the number of towers in the pack to better reward longer packs (+10% multiplier per tower starting at 4 towers)
-                multiplier = 1.0 + (n - 3) * 0.10
-                final_xp = math.floor(power_mean * multiplier)
+                power_mean = pow(sum(pow(score, 1.5) for score in base_scores) / n, 1 / 1.5)
+                final_xp = math.floor(power_mean * (1.0 + (n - 3) * 0.10))
             else:
                 final_xp = 0
             packs.append({"id": pack["id"], "name": pack["name"], "towers": ids, "xp": final_xp})
@@ -103,7 +109,7 @@ tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "cre
 
 def build():
     with ThreadPoolExecutor(max_workers=4) as pool:
-        players, towers, games, countries = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B"])
+        players, towers, games, countries, scotw_points = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B", "scotwpoints!A:B"])
 
     flags = {}
     for c in countries:
@@ -167,10 +173,10 @@ def build():
     return {
         "players": players,
         "towers": towers,
-        "games": games,
         "packs": packs,
         "victors_by_tower": victors_by_tower,
         "pack_victors": pack_victors,
+        "scotw_points": scotw_points,
         "script": script,
         "version": hashlib.md5(script.encode()).hexdigest()[:12],
     }
@@ -233,8 +239,6 @@ def refresh_bot_data():
 
 threading.Thread(target=refresh_bot_data, daemon=True).start()
 
-scotw_points = get_data("scotwpoints!A:B")
-
 def player_identity(player):
     return str(player.get("userid") or player.get("username", "")).strip()
 
@@ -276,8 +280,8 @@ def page_meta():
 
 @app.route("/")
 def home():
-    js = {"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs}
-    return render_template("index.html", js=js, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+    user = session.get("user")
+    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": data["scotw_points"], "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
 
 @app.route("/data.js")
 def data_js():
@@ -285,6 +289,52 @@ def data_js():
     response.headers["Content-Type"] = "application/javascript; charset=utf-8"
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable" if request.args.get("v") == data["version"] else "no-store"
     return response
+
+@app.route("/login")
+def login():
+    verifier = secrets.token_urlsafe(64)
+    state = secrets.token_urlsafe(16)
+    session["oauth"] = {"state": state, "verifier": verifier}
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    return redirect("https://apis.roblox.com/oauth/v1/authorize?" + urlencode({
+        "client_id": os.getenv("ROBLOX_CLIENT_ID"),
+        "redirect_uri": url_for("callback", _external=True),
+        "scope": "openid profile",
+        "response_type": "code",
+        "state": state,
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+    }))
+
+@app.route("/callback")
+def callback():
+    oauth = session.pop("oauth", None)
+    code = request.args.get("code")
+    if not oauth or not code or not secrets.compare_digest(request.args.get("state", ""), oauth["state"]):
+        return redirect("/")
+    try:
+        token = requests.post("https://apis.roblox.com/oauth/v1/token", data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": url_for("callback", _external=True),
+            "client_id": os.getenv("ROBLOX_CLIENT_ID"),
+            "client_secret": os.getenv("ROBLOX_CLIENT_SECRET"),
+            "code_verifier": oauth["verifier"],
+        }, timeout=10)
+        info = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers={"Authorization": f"Bearer {token.json()['access_token']}"}, timeout=10) if token.ok else None
+        user = info.json() if info and info.ok else None
+    except (requests.RequestException, KeyError, ValueError):
+        user = None
+    if not user:
+        return redirect("/")
+    session.permanent = True
+    session["user"] = {"id": user["sub"], "name": user.get("preferred_username") or user["name"]}
+    return redirect("/")
+
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect("/")
 
 @app.route("/privacy-policy")
 def privacy_policy():

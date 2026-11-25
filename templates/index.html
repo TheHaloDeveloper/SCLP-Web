@@ -1,112 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8Q064ZHL1Q"></script>
-    <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-8Q064ZHL1Q');
-    </script>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ meta.title }}</title>
-    <meta name="description" content="{{ meta.description }}">
-    <meta property="og:site_name" content="SCLP Official">
-    <meta property="og:title" content="{{ meta.title }}">
-    <meta property="og:description" content="{{ meta.description }}">
-    <meta property="og:image" content="{{ url_for('static', filename='images/sclp.png', _external=True) }}">
-    <meta name="twitter:card" content="summary">
-
+{% extends "base.html" %}
+{% block head %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
-    <link rel="stylesheet" href="{{ static_v('style.css') }}">
-    <link rel="stylesheet" href="{{ static_v('screens.css') }}">
-</head>
-<body>
+{% endblock %}
+{% block body %}
 {% macro sort_box(name, options) %}
-<label>Sort by:
-    <div class="sort-row">
-        <select id="{{ name }}-sort">
-            {% for value, label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-        </select>
-        <button type="button" id="{{ name }}-sort-dir" class="sort-dir" title="Toggle sort direction"></button>
-    </div>
-</label>
+<div class="sort-row">
+    <select id="{{ name }}-sort">
+        {% for value, label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+    <button type="button" id="{{ name }}-sort-dir" class="sort-dir" title="Toggle sort direction"></button>
+</div>
 {% endmacro %}
     <div id="main">
-        <div id="nav">
-            <div id="nav-links"></div>
-            <div id="nav-right">
-                <a href="https://www.towerstats.com/clans/6" target="_blank" id="clan-link">
-                    <img src="/static/images/towerstats.webp" id="towerstats-icon">
-                    <span id="clan-text">CLAN</span>
-                </a>
-                <img src="/static/images/discord.webp" id="discord">
-                <input type="text" id="username" placeholder="Player...">
-            </div>
-        </div>
+        {% include "nav.html" %}
         <div id="home-page" class="hidden">
             <h1>Soul Crushing Leaderboard Project</h1>
             <h2>
                 <a href="https://discord.gg/t9crQndHyn" target="_blank">Join the Discord Server to submit completions</a>
             </h2>
             <div id="credits"></div>
-            <footer class="site-footer">
-                <a href="/privacy-policy">Privacy Policy</a>
-                <a href="/terms-of-service">Terms of Service</a>
-            </footer>
         </div>
         <div id="towers-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="towers-search">
+                        <input type="text" id="search" placeholder="Search...">
+                    </div>
+                    <div class="toolbar-row">
+                        {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
+                        <select id="game-filter"></select>
+                    </div>
+                    <div>
+                        <div class="range-head">
+                            <span>Difficulty</span>
+                            <span class="diff-inputs"><input type="text" id="diff-min-text" class="diff-text" inputmode="decimal"> - <input type="text" id="diff-max-text" class="diff-text" inputmode="decimal"></span>
+                        </div>
+                        <div class="range">
+                            <div class="range-track">
+                                <div class="range-dim" id="range-dim-low"></div>
+                                <div class="range-dim" id="range-dim-high"></div>
+                            </div>
+                            <input type="range" id="diff-min" min="800" max="1399" value="800">
+                            <input type="range" id="diff-max" min="800" max="1399" value="1399">
+                        </div>
+                        <div class="range-names">
+                            {% for d in diffs[:6] %}<span>{{ d[1] }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
                 <div class="list">
                     <table id="towers-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>The List</h1>
-                        <div class="filter" id="towers-search">
-                            <input type="text" id="search" placeholder="Search...">
-                        </div>
-                        <div class="filter">
-                            <p>Difficulty:</p>
-                            <div class="diff-checks">
-                                {% for d in diffs[:6] %}<label><input type="checkbox" id="diff-{{ loop.index + 7 }}" checked> {{ d[1] }}</label>{% endfor %}
-                            </div>
-                        </div>
-                        <div class="filter">
-                            <label>Game:
-                                <select id="game-filter"></select>
-                            </label>
-                            {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
-                        </div>
-                    </div>
-
                     {# i hate how this structure is setup, gonna full refactor this #}
                     <div class="card" id="tower-details">
+                        <button type="button" class="back">Back</button>
                         <div id="tower-name-group">
                             <p class="big" id="tower-name"></p>
                             <p class="small" id="tower-alternate-names"></p>
                             <p class="small" id="tower-previous-names"></p>
                         </div>
-                        <p>Difficulty: <span id="tower-diff"></span></p>
-                        <p>Location: <span id="tower-location"></span></p>
-                        <p class="small" id="tower-other-locations"></p>
-                        <p>Rank: #<span id="tower-rank"></span></p>
-                        <p><span id="tower-creator"></span></p>
-                        <p>XP for completion: <span id="tower-xp"></span></p>
-                        <p>Victors: <span id="tower-victor-count"></span></p>
-                        <p id="tower-quality"></p>
-                        <p id="tower-length"></p>
-                        <p id="tower-packs"></p>
-                        <p class="small"><i>Tower ID: <span id="tower-id"></span></i></p>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Difficulty</span><span class="stat-value" id="tower-diff"></span></div>
+                            <div class="stat"><span class="stat-label">Rank</span><span class="stat-value">#<span id="tower-rank"></span></span></div>
+                            <div class="stat"><span class="stat-label">Victors</span><span class="stat-value" id="tower-victor-count"></span></div>
+                        </div>
+                        <p class="row" id="tower-creator"></p>
+                        <p class="row"><span class="label">Location</span><span id="tower-location"></span></p>
+                        <p class="row"><span class="label">Completion XP</span><span id="tower-xp"></span></p>
+                        <p class="row" id="tower-quality"></p>
+                        <p class="row" id="tower-length"></p>
+                        <p class="row" id="tower-packs"></p>
 
-                        <p class="big">Victors</p>
+                        <p class="section-heading">Victors</p>
                         <table id="tower-victors"></table>
                     </div>
                 </div>
@@ -114,46 +82,47 @@
         </div>
         <div id="leaderboard-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="players-search"></div>
+                    <div class="toolbar-row">
+                        {{ sort_box("player", player_sorts) }}
+                        <select id="country-filter">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="list">
                     <table id="players-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>The Top Obbyists</h1>
-                        <div class="filter" id="players-search"></div>
-                        <div class="filter filter-right">
-                            {{ sort_box("player", player_sorts) }}
-                            <label>Country:
-                                <select id="country-filter">
-                                    <option value="">All Countries</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-
                     {# bad #}
                     <div class="card" id="player-details">
+                        <button type="button" class="back">Back</button>
                         <p class="big" id="player-name"></p>
-                        <p id="player-role"></p><br>
+                        <p id="player-role"></p>
 
-                        <p>Total XP: <span id="player-xp"></span></p>
-                        <p>Level: <span id="player-level"></span></p>
-                        <p>Rank: <span id="player-rank"></span></p><br>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Rank</span><span class="stat-value" id="player-rank"></span></div>
+                            <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="player-level"></span></div>
+                            <div class="stat"><span class="stat-label">Total XP</span><span class="stat-value" id="player-xp"></span></div>
+                        </div>
 
-                        <p class="big">Stats</p>
-                        <table id="player-stats"></table><br>
+                        <table id="player-stats"></table>
 
                         <div class="player-tower-views hidden" id="player-tower-views" role="group" aria-label="Player lists">
                             <button type="button" class="player-tower-tab active" id="player-completions-tab" aria-pressed="true" onclick="show_player_tower_view('completions')">Completions</button>
                             <button type="button" class="player-tower-tab" id="player-packs-tab" aria-pressed="false" onclick="show_player_tower_view('packs')">Packs</button>
                             <button type="button" class="player-tower-tab" id="player-creations-tab" aria-pressed="false" onclick="show_player_tower_view('creations')">Creations</button>
                         </div>
-                        <p class="big hidden" id="player-tower-view-title">Completions</p>
+                        <p class="section-heading hidden" id="player-tower-view-title">Completions</p>
                         <div class="player-creation-filters hidden" id="player-creation-filters">
-                            <label><input type="checkbox" id="player-solo-creations" checked> Solo projects (<span id="player-solo-creations-count">0</span>)</label>
-                            <label><input type="checkbox" id="player-collaborations" checked> Collaborations (<span id="player-collaborations-count">0</span>)</label>
+                            <select id="player-creation-filter">
+                                <option value="all"></option>
+                                <option value="solo"></option>
+                                <option value="collab"></option>
+                            </select>
                         </div>
                         <table id="player-towers" class="entries"></table>
                         <table id="player-packs" class="entries hidden"></table>
@@ -164,27 +133,29 @@
         </div>
         <div id="packs-page" class="hidden">
             <div class="left">
+                <div class="toolbar">
+                    <div id="packs-search"></div>
+                    <div class="toolbar-row">
+                        {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
+                    </div>
+                </div>
                 <div class="list">
                     <table id="packs-table"></table>
                 </div>
             </div>
             <div class="right">
                 <div class="panel">
-                    <div class="filters">
-                        <h1>Packs</h1>
-                        <div class="filter" id="packs-search"></div>
-                        <div class="filter filter-right">
-                            {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
-                        </div>
-                    </div>
                     <div class="card" id="pack-details">
+                        <button type="button" class="back">Back</button>
                         <p class="big" id="pack-name"></p>
-                        <p>Progress: <span id="pack-progress"></span></p>
-                        <p>Bonus XP: <span id="pack-bonus"></span></p>
-                        <p>Victors: <span id="pack-victor-count"></span></p><br>
-                        <p class="big">Towers</p>
-                        <table id="pack-towers" class="entries"></table><br>
-                        <p class="big">Victors</p>
+                        <div class="stats">
+                            <div class="stat"><span class="stat-label">Progress</span><span class="stat-value" id="pack-progress"></span></div>
+                            <div class="stat"><span class="stat-label">Bonus XP</span><span class="stat-value" id="pack-bonus"></span></div>
+                            <div class="stat"><span class="stat-label">Victors</span><span class="stat-value" id="pack-victor-count"></span></div>
+                        </div>
+                        <p class="section-heading">Towers</p>
+                        <table id="pack-towers" class="entries"></table>
+                        <p class="section-heading">Victors</p>
                         <table id="pack-victors"></table>
                     </div>
                 </div>
@@ -205,6 +176,7 @@
             </div>
         </div>
     </div>
+    {% include "footer.html" %}
 
     <script>
         {% for name, value in js.items() %}{{ name }} = {{ value | tojson }};
@@ -215,5 +187,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="{{ static_v('js/misc.js') }}"></script>
     <script src="{{ static_v('js/towermanager.js') }}"></script>
-</body>
-</html>
+{% endblock %}

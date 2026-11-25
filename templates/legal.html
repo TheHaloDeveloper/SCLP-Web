@@ -1,19 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ meta.title }}</title>
-    <meta name="description" content="{{ meta.description }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat">
-    <link rel="stylesheet" href="{{ static_v('style.css') }}">
-</head>
-<body class="legal-page">
+{% extends "base.html" %}
+{% block body_class %}legal-page{% endblock %}
+{% block body %}
+    {% include "nav.html" %}
     <main class="legal-content card">
-        <a class="legal-back" href="/">Back to SCLP</a>
         <h1>{% block heading %}{% endblock %}</h1>
-        <p class="legal-effective"><strong>Effective Date:</strong> October 29, 2026</p>
+        <p class="legal-effective"><strong>Effective Date:</strong> November 25, 2026</p>
 {% block content %}{% endblock %}
     </main>
-</body>
-</html>
+    {% include "footer.html" %}
+{% endblock %}

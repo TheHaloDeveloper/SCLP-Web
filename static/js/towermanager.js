@@ -46,7 +46,10 @@ function build_lookups() {
     player_lookup = Object.fromEntries(players.map(p => [p.username, p]));
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
     derive_data();
-    tower_names = Object.fromEntries(towers.map(t => [t.id, [t.name.toLowerCase(), abbr(t.name).toLowerCase()]]));
+    tower_names = Object.fromEntries(towers.map(t => {
+        let others = `${t["alternate name(s)"]},${t["previous name(s)"]}`.split(",").map(n => n.trim()).filter(n => n.length > 1);
+        return [t.id, [t.name, abbr(t.name), ...others, ...others.map(abbr)].map(n => n.toLowerCase())];
+    }));
 
     pack_info = Object.fromEntries(packs.map(p => [p.id, {
         hardest: hardest(p.towers),
@@ -103,17 +106,25 @@ function tower_row(t, last, button = "tower-link", attrs = "") {
     return `
         <tr ${attrs}>
             <td class="${diff_name(t.difficulty)}">#${t.rank}</td>
-            <td><a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${t.name}</a></td>
+            <td><a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${esc(t.name)}</a></td>
             ${last}
         </tr>
     `;
+}
+
+function diff_row(t, button) {
+    return tower_row(t, `<td>${diff_span(t.difficulty)}</td>`, button);
+}
+
+function pack_button(pack, button = "pack-link") {
+    return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
 }
 
 function player_row(name, rank, last) {
     let player = find_player(name);
     let encoded_name = encodeURIComponent(player ? player_identifier(player) : name).replace(/'/g, "%27");
     return `
-        <tr data-name="${name.toLowerCase()}">
+        <tr data-name="${esc(name.toLowerCase())}">
             <td>#${rank}</td>
             <td>${player ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>` : role(name, true)}</td>
             ${last}
@@ -130,7 +141,6 @@ function victor_rows(names, empty) {
 }
 
 let tables = {};
-let done_towers = new Set();
 
 function render_rows(table, items, row) {
     tables[table] = {items, row, count: 0};
@@ -152,16 +162,8 @@ $(".list").on("scroll", function () {
     if (tables[table]) more_rows(table);
 });
 
-function done_ids() {
-    let player = checked_player();
-    return new Set(player ? player.completions : []);
-}
-
-function mark_done() {
-    done_towers = done_ids();
-    for (let row of document.getElementById("towers-table").rows) {
-        row.querySelector("a").className = `table-row-link ${done_towers.has(+row.dataset.id) ? "tower-link-done" : "tower-link"}`;
-    }
+function diff_range() {
+    return [+$("#diff-min").val(), +$("#diff-max").val()];
 }
 
 function render_towers() {
@@ -182,14 +184,14 @@ function render_towers() {
 
     let search = query();
     let place = $("#game-filter").val();
-    let allowed = [8, 9, 10, 11, 12, 13].filter(i => $("#diff-" + i).prop("checked"));
-    done_towers = done_ids();
+    let [low, high] = diff_range();
+    let player = checked_player();
+    let done_towers = new Set(player ? player.completions : []);
 
     let matches = towers.filter(t => {
         if (sort == "quality" && t.quality == null) return false;
         if (sort == "length" && String(t["time/length"] || "").trim() == "") return false;
-        let [name, abbr] = tower_names[t.id];
-        return (name.includes(search) || abbr.includes(search)) && allowed.includes(Math.floor(t.difficulty / 100)) && (!place || t.places.some(p => p[0] == place));
+        return tower_names[t.id].some(name => name.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
     matches.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
     render_rows("towers-table", matches, t => tower_row(t, td_right(last(t)), done_towers.has(t.id) ? "tower-link-done" : "tower-link", `data-id="${t.id}"`));
@@ -215,13 +217,11 @@ function render_players() {
 
     let search = query();
     let country = $("#country-filter").val();
-    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp);
+    let ranked = [...players].sort((a, b) => sign * (value(b) - value(a)) || b.total_xp - a.total_xp).filter(p => value(p) != 0 || !(asc || diff));
 
     let matches = [];
     ranked.forEach((p, i) => {
-        let v = value(p);
-        if (v == 0 && (asc || diff)) return;
-        if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, v]);
+        if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, value(p)]);
     });
     render_rows("players-table", matches, ([p, rank, v]) => player_row(p.username, rank, td_right(text(v))));
 }
@@ -232,7 +232,8 @@ function filter_packs() {
 }
 
 function checked_player() {
-    return find_player($("#username").val());
+    if (!me) return false;
+    return players.find(p => p.userid == me.id) || find_player(me.name);
 }
 
 function done_count(pack, player) {
@@ -268,9 +269,9 @@ function render_packs() {
     $("#packs-table").html(sorted_packs.map(pack => {
         let done = pack.towers.length > 0 && done_count(pack, player) == pack.towers.length;
         return `
-            <tr data-name="${pack.name.toLowerCase()}">
+            <tr data-name="${esc(pack.name.toLowerCase())}">
                 <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-                <td><a class="table-row-link ${done ? 'pack-link-done' : 'pack-link'}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
+                <td>${pack_button(pack, done ? "pack-link-done" : "pack-link")}</td>
                 ${td_right(last(pack))}
             </tr>
         `;
@@ -280,28 +281,69 @@ function render_packs() {
 
 function open_pack(id) {
     current_pack_id = id;
-    open_page("Packs");
+    open_page("Packs", true);
     let pack = packs.find(p => p.id == id);
     let player = checked_player();
     let names = pack_victors[id];
 
-    $("#pack-name").html(pack.name);
+    $("#pack-name").html(esc(pack.name));
     $("#pack-progress").html(`${done_count(pack, player)}/${pack.towers.length}`);
     $("#pack-bonus").html(`${format_num(pack.xp)} XP`);
     $("#pack-victor-count").html(names.length);
 
     let pack_towers = pack.towers.map(tid => tower_lookup[tid]).filter(Boolean).sort((a, b) => a.difficulty - b.difficulty);
-    $("#pack-towers").html(pack_towers.map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`, player && player.completions.includes(t.id) ? "tower-link-done" : "tower-link")).join(""));
+    $("#pack-towers").html(pack_towers.map(t => diff_row(t, player && player.completions.includes(t.id) ? "tower-link-done" : "tower-link")).join(""));
     $("#pack-victors").html(victor_rows(names, "No pack victors yet"));
 }
 
-$("#game-filter, [id^=diff-]").on("input change", render_towers);
-$("#username").on("input", function () {
-    mark_done();
-    render_packs();
-    localStorage.setItem("sclp-username", $(this).val());
+function range_color(value) {
+    let stops = [[0x00, 0x3F, 0xFF], [0x00, 0x9F, 0xFF], [0x00, 0xFF, 0xFF], [0xFF, 0xFF, 0xFF], [0xEC, 0xB2, 0xFA], [0x9F, 0x3F, 0xFF]];
+    let pos = Math.min(Math.max((value - 800) / 599 * 6 - 0.5, 0), 5);
+    let i = Math.min(Math.floor(pos), 4);
+    return `rgb(${stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * (pos - i))).join(",")})`;
+}
+
+function show_range() {
+    let [low, high] = diff_range();
+    $("#diff-min").css("--knob", range_color(low));
+    $("#diff-max").css("--knob", range_color(high));
+    $("#diff-min-text").val(format_num(low / 100));
+    $("#diff-max-text").val(format_num(high / 100));
+    $("#range-dim-low").css("width", `${(low - 800) / 599 * 100}%`);
+    $("#range-dim-high").css("width", `${(1399 - high) / 599 * 100}%`);
+}
+
+$("#diff-min, #diff-max").on("input", function () {
+    let [low, high] = diff_range();
+    if (low > high) $(this.id == "diff-min" ? "#diff-max" : "#diff-min").val(this.value);
+    show_range();
 });
-$("#username").val(localStorage.getItem("sclp-username") || "");
+$(".range").on("pointerdown", function (e) {
+    if ($(e.target).is("input")) return;
+    let box = this.getBoundingClientRect();
+    let to_value = x => Math.round(800 + Math.min(Math.max((x - box.left - 9) / (box.width - 18), 0), 1) * 599);
+    let value = to_value(e.clientX);
+    let [low, high] = diff_range();
+    let knob = $(value - low < high - value ? "#diff-min" : "#diff-max");
+    knob.val(value).trigger("input");
+    $(document).on("pointermove.range", e => knob.val(to_value(e.clientX)).trigger("input"));
+    $(document).one("pointerup.range", () => $(document).off("pointermove.range"));
+    e.preventDefault();
+});
+$(".diff-text").on("change", function () {
+    let value = Math.round(parseFloat(this.value) * 100);
+    if (!isNaN(value)) $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max").val(Math.min(Math.max(value, 800), 1399)).trigger("input");
+    show_range();
+});
+$(".diff-text").on("keydown", function (e) {
+    if (e.key == "Enter") this.blur();
+    if (e.key != "ArrowUp" && e.key != "ArrowDown") return;
+    e.preventDefault();
+    let slider = $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max");
+    let step = e.shiftKey ? 10 : 1;
+    slider.val(Math.min(Math.max(+slider.val() + (e.key == "ArrowUp" ? step : -step), 800), 1399)).trigger("input");
+});
+$("#game-filter, #diff-min, #diff-max").on("input", render_towers);
 $("#country-filter").on("change", render_players);
 
 function bind_sort(name, sort, dir, render) {
@@ -327,10 +369,10 @@ bind_sort("tower", "difficulty", "desc", render_towers);
 bind_sort("player", "xp", "desc", render_players);
 bind_sort("pack", "xp", "asc", render_packs);
 
-function places_html(tower, start, end) {
-    return tower.places.slice(start, end).map(([abbr, extra]) => {
+function places_html(tower) {
+    return tower.places.map(([abbr, extra]) => {
         let href = abbr == "Place" ? tower.game : game_lookup[abbr]?.link;
-        return `<a href='${href}' target='_blank'>${extra ? `${abbr}, ${extra}` : abbr}</a>`;
+        return `<a href='${esc(href)}' target='_blank'>${esc(extra ? `${abbr}, ${extra}` : abbr)}</a>`;
     }).join(" / ");
 }
 
@@ -356,19 +398,23 @@ $(document).on("click", "a[data-open]", function (e) {
 function render_tower_creators(creators) {
     let creator_links = names => names.map(c => {
         let player = find_player(c);
-        return player ? entity_link("u", player.username, c) : c;
+        return player ? entity_link("u", player.username, esc(c)) : esc(c);
     }).join(", ");
     let toggle = label => `<button type="button" class="link-button" onclick="toggle_tower_creators()">${label}</button>`;
-    if (creators.length <= 5) return `Created by: ${creator_links(creators)}`;
+    if (creators.length <= 5) return creator_links(creators);
     if (tower_creators_expanded) {
-        return `Created by: ${creator_links(creators)} ${toggle("(Show Less)")}`;
+        return `${creator_links(creators)} ${toggle("(Show Less)")}`;
     }
-    return `Created by: ${creator_links(creators.slice(0, 4))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
+    return `${creator_links(creators.slice(0, 4))}, ${toggle(`and ${creators.length - 4} other creators`)}`;
 }
 
 function toggle_tower_creators() {
     tower_creators_expanded = !tower_creators_expanded;
-    $("#tower-creator").html(render_tower_creators(tower_lookup[current_tower_id].creators));
+    $("#tower-creator").html(row_html("Creators", render_tower_creators(tower_lookup[current_tower_id].creators)));
+}
+
+function row_html(label, value) {
+    return `<span class="label">${label}</span><span>${value}</span>`;
 }
 
 function show_info(selector, content, method = "html") {
@@ -378,30 +424,28 @@ function show_info(selector, content, method = "html") {
 function open_tower(id) {
     current_tower_id = id;
     tower_creators_expanded = false;
-    open_page("Towers");
+    open_page("Towers", true);
     let tower = tower_lookup[id];
     let diff = diff_name(tower.difficulty);
-    let tower_packs = packs.filter(pack => pack.towers.includes(id));
 
     let known_as = (field, label) => {
         let names = tower[field]?.trim().replace(/,(?=\S)/g, ", ");
         return names ? `${label}: ${names}` : "";
     };
 
-    $("#tower-name").html(`(${abbr(tower.name)}) ${tower.name}`);
+    $("#tower-name").html(`(${esc(abbr(tower.name))}) ${esc(tower.name)}`);
     show_info("#tower-alternate-names", known_as("alternate name(s)", "also known as"), "text");
     show_info("#tower-previous-names", known_as("previous name(s)", "previously known as"), "text");
     $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
-    $("#tower-location").html(places_html(tower, 0, 1));
-    show_info("#tower-other-locations", tower.places.length > 1 ? `<i>Other Locations: ${places_html(tower, 1, tower.places.length)}</i>` : "");
+    $("#tower-location").html(places_html(tower));
     $("#tower-rank").html(tower.rank);
-    $("#tower-creator").html(tower.creators.length ? render_tower_creators(tower.creators) : "").parent().toggle(tower.creators.length > 0);
+    show_info("#tower-creator", tower.creators.length ? row_html("Creators", render_tower_creators(tower.creators)) : "");
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
-    show_info("#tower-quality", tower.quality ? `Quality: <span class="${quality_cls(tower.quality)}">${tower.quality}</span>` : "");
-    show_info("#tower-length", tower["time/length"] ? `Length: ${format_length(tower["time/length"])} minutes` : "");
-    show_info("#tower-packs", tower_packs.length ? `Packs: ${tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")}` : "");
-    $("#tower-id").html(id);
+    show_info("#tower-quality", tower.quality ? row_html("Quality", `<span class="${quality_cls(tower.quality)}">${tower.quality}</span>`) : "");
+    show_info("#tower-length", tower["time/length"] ? row_html("Length", `${format_length(tower["time/length"])} minutes`) : "");
+    let tower_packs = packs.filter(pack => pack.towers.includes(id));
+    show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
     $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
 }
 
@@ -419,8 +463,8 @@ function level_text(xp, level_only) {
 function role(name, html = false) {
     let found = roles[name];
     if (!html) return found || "";
-    if (found) return colored(name, role_colors[found]);
-    return cool_members.includes(name) ? `<span class="cool">${name}</span>` : name;
+    if (found) return colored(esc(name), role_colors[found]);
+    return cool_members.includes(name) ? `<span class="cool">${esc(name)}</span>` : esc(name);
 }
 
 function add_badges(player, role) {
@@ -453,10 +497,11 @@ function show_player_tower_view(view) {
 
 function render_player_creations() {
     let solo = player_created_towers.filter(t => t.creators.length == 1);
-    $("#player-solo-creations-count").text(solo.length);
-    $("#player-collaborations-count").text(player_created_towers.length - solo.length);
-    let shown = player_created_towers.filter(t => $(t.creators.length == 1 ? "#player-solo-creations" : "#player-collaborations").prop("checked"));
-    $("#player-creations").html(shown.map(t => tower_row(t, `<td>${diff_span(t.difficulty)}</td>`)).join(""));
+    $("#player-creation-filter option[value=all]").text(`All creations (${player_created_towers.length})`);
+    $("#player-creation-filter option[value=solo]").text(`Solo projects (${solo.length})`);
+    $("#player-creation-filter option[value=collab]").text(`Collaborations (${player_created_towers.length - solo.length})`);
+    let kind = $("#player-creation-filter").val();
+    $("#player-creations").html(player_created_towers.filter(t => kind == "all" || (kind == "solo") == (t.creators.length == 1)).map(t => diff_row(t)).join(""));
 }
 
 function open_player(name, rank) {
@@ -465,7 +510,7 @@ function open_player(name, rank) {
     let username = player.username;
     current_player_name = username;
     current_player_id = player_identifier(player);
-    open_page("Leaderboard");
+    open_page("Leaderboard", true);
     let job = role(username);
     let counts = diff_counts[username];
     let sum = (a, b) => a + b;
@@ -473,8 +518,8 @@ function open_player(name, rank) {
     let got_all = Object.values(counts).reduce(sum, 0);
     let total_all = Object.values(diff_totals).reduce(sum, 0);
 
-    $("#player-name").html(`${username} ${flag_html(player.nationality)}`);
-    $("#player-role").html(job ? colored(job, role_colors[job]) : "");
+    $("#player-name").html(`${esc(username)} ${flag_html(player.nationality)}`);
+    $("#player-role").html(job ? colored(esc(job), role_colors[job]) : "");
     $("#player-xp").html(format_num(player.total_xp));
     $("#player-level").html(level_text(player.total_xp));
     $("#player-rank").html(`#${rank || player.rank}`);
@@ -493,14 +538,14 @@ function open_player(name, rank) {
     }).join("");
     $("#player-stats").html(`
         <tr>
-            <th>TOTAL</th>
+            <th>Stats</th>
             <th>${got_all}/${total_all}</th>
             <th>${percent(got_all, total_all)}%</th>
         </tr>
     ` + diff_rows);
 
     let completed = player_towers[username];
-    $("#player-towers").html(completed.map(id => tower_row(tower_lookup[id], `<td>${diff_span(tower_lookup[id].difficulty)}</td>`)).join(""));
+    render_rows("player-towers", completed, id => diff_row(tower_lookup[id]));
     let created = towers.filter(t => t.creators.some(creator => creator.toLowerCase() == username.toLowerCase()))
         .sort((a, b) => b.difficulty - a.difficulty || a.rank - b.rank);
     player_created_towers = created;
@@ -510,7 +555,7 @@ function open_player(name, rank) {
     $("#player-packs").html(completed_packs.length ? completed_packs.map(pack => `
         <tr>
             <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-            <td><a class="table-row-link pack-link" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
+            <td><button class="pack-link" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
             ${td_right(`${format_num(pack.xp)} XP`)}
         </tr>
     `).join("") : empty_row("No packs completed"));
@@ -528,11 +573,15 @@ function open_player(name, rank) {
     add_badges(player, job);
 }
 
-$("#player-solo-creations, #player-collaborations").on("change", render_player_creations);
+$("#player-creation-filter").on("change", render_player_creations);
+
+$("#player-details").on("scroll", function () {
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 800) more_rows("player-towers");
+});
 
 $("#game-filter").html("<option value=''>All</option><option value='Place'>Place</option>");
 for (let game of games) {
-    $("#game-filter").append(`<option value='${game.abbr}'>${game.abbr}</option>`);
+    $("#game-filter").append(`<option value='${esc(game.abbr)}'>${esc(game.abbr)}</option>`);
 }
 
 window.addEventListener('popstate', event => restore(() => {
@@ -541,6 +590,7 @@ window.addEventListener('popstate', event => restore(() => {
     }
 }));
 
+show_range();
 build_lookups();
 render_towers();
 render_players();

@@ -38,12 +38,16 @@ function title_case(str) {
     return str.replace(/\w\S*/g, text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase());
 }
 
+function esc(text) {
+    return String(text ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
 function colored(text, color) {
     return color ? `<span style="color: ${color}">${text}</span>` : text;
 }
 
 for (let {name, color, members} of staff) {
-    if (members.length) $("#credits").append(`<h3><div>${colored(`[${name}]`, color)}</div>${members.join(", ")}</h3>`);
+    if (members.length) $("#credits").append(`<h3><div>${colored(`[${name}]`, color)}</div>${members.map(esc).join(", ")}</h3>`);
 }
 
 function format_num(num) {
@@ -52,12 +56,13 @@ function format_num(num) {
 }
 
 function abbr(x) {
-    x = x.replace("CumpleAnos", "Cumple Anos").replace(" Facility", "").replace("GBJ Edition", "G B J").replace(/\.([^\s])/g, ' $1').split(" (")[0];
+    x = x.trim().replace("CumpleAnos", "Cumple Anos").replace(" Facility", "").replace("GBJ Edition", "G B J").replace(/\.([^\s])/g, ' $1').replace(/\s*\([^)]*\)$/, "");
     return x.replace(":", " :").replaceAll('-', ' ').split(' ').map(word => {
-        if (!word) return '';
-        if (/^\d+$/.test(word)) return word[0];
-        let letter = word[0];
-        let digit = word.match(/\d/);
+        if (word == ":") return word;
+        let [letter, ...rest] = Array.from(word.replace(/^[^\p{L}\p{N}]+/u, ""));
+        if (!letter) return '';
+        if (/\d/.test(letter)) return letter;
+        let digit = rest.join("").match(/\d/);
         return (letter == letter.toLowerCase() ? letter : letter.toUpperCase()) + (digit ? digit[0] : '');
     }).join('');
 }
@@ -81,27 +86,6 @@ function sub_range(d) {
     return "Peak";
 }
 
-function scale_layout() {
-    let designedWidth = 800;
-    let screenWidth = window.innerWidth;
-    let scale = Math.min(screenWidth / designedWidth, 1);
-    let main = document.getElementById('main');
-
-    if (screenWidth < designedWidth) {
-        main.style.transform = `scale(${scale})`;
-        main.style.transformOrigin = 'top left';
-        main.style.width = `${designedWidth}px`;
-        main.style.height = `${100 / scale}%`;
-    } else {
-        main.style.transform = '';
-        main.style.width = '';
-        main.style.height = '';
-    }
-}
-
-window.addEventListener('resize', scale_layout);
-scale_layout();
-
 document.querySelectorAll("input").forEach(input => {
     input.setAttribute("autocomplete", "off");
     input.setAttribute("autocorrect", "off");
@@ -110,11 +94,17 @@ document.querySelectorAll("input").forEach(input => {
 });
 
 let pages = ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"];
-for (let page of pages) {
-    $("#nav-links").append(`<button class="nav-link" onclick="open_page('${page}')" onmousedown="middle_click(event, '/?page=${page.toLowerCase()}')">${page}</button>`);
-}
+$("#nav-links").on("click", ".nav-link", function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.which > 1) return;
+    e.preventDefault();
+    $("#nav").removeClass("open");
+    open_page($(this).data("page"));
+});
+
+$("#menu").on("click", () => $("#nav").toggleClass("open"));
 
 let current_page = "Home";
+let showing_detail = false;
 let current_tower_id = null;
 let current_player_name = null;
 let current_player_id = null;
@@ -134,12 +124,19 @@ let search_filters = {
     "SCoTW": () => filter_scotw(),
 };
 
-function open_page(page_name) {
+function open_page(page_name, detail = false) {
+    let changed = page_name != current_page;
     current_page = page_name;
+    showing_detail = detail;
+    $(".nav-link").each(function () {
+        $(this).toggleClass("active", $(this).data("page") == page_name);
+    });
+    $("#menu-label").text(page_name);
+    document.querySelector(".nav-link.active")?.scrollIntoView({inline: "center", block: "nearest"});
     for (let page of pages) {
-        $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name);
+        $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name).toggleClass("detail", detail);
     }
-    if (search_slots[page_name]) {
+    if (changed && search_slots[page_name]) {
         $("#search").appendTo(search_slots[page_name]).val("");
     }
     push_url();
@@ -147,13 +144,13 @@ function open_page(page_name) {
 
 function current_url() {
     let qs = null;
-    if (current_page == "Towers" && current_tower_id != null) {
+    if (showing_detail && current_page == "Towers") {
         qs = `t=${current_tower_id}`;
-    } else if (current_page == "Leaderboard" && current_player_name != null) {
+    } else if (showing_detail && current_page == "Leaderboard") {
         qs = `u=${encodeURIComponent(current_player_id)}`;
-    } else if (current_page == "Packs" && current_pack_id != null) {
+    } else if (showing_detail && current_page == "Packs") {
         qs = `pk=${current_pack_id}`;
-    } else if (current_page == "Home" || current_page == "SCoTW") {
+    } else {
         qs = `page=${current_page.toLowerCase()}`;
     }
     return qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
@@ -192,7 +189,7 @@ function filter_rows(table, keep) {
 function render_scotw() {
     let tower = tower_lookup[scotw.Tower];
     $("#scotw-title").attr("class", diff_name(tower.difficulty));
-    $("#scotw-title").html(`<button class="tower-link" onclick="open_tower(${tower.id})">${tower.name}</button>`);
+    $("#scotw-title").html(`<button class="tower-link" onclick="open_tower(${tower.id})">${esc(tower.name)}</button>`);
 
     let lb = scotw_points.map(p => ({username: p.username, points: +p.points})).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
     $("#scotw-table").html(lb.map((e, i) => player_row(e.username, i + 1, td_right(`${e.points} pts`))).join(""));
@@ -223,10 +220,13 @@ function update_timer() {
     setTimeout(update_timer, 1000);
 }
 
+$(document).on("click", ".back", () => open_page(current_page));
+
 $("#search").on("input", () => search_filters[current_page]?.());
 
 let scotw;
 
-document.getElementById('discord').addEventListener('click', function() {
-    window.open('https://discord.gg/t9crQndHyn', '_blank');
+$(document).on("click", e => {
+    if (!$(e.target).closest("#nav-links, #menu").length) $("#nav").removeClass("open");
+    if (!$(e.target).closest("#account").length) $("#account").removeAttr("open");
 });
