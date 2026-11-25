@@ -796,6 +796,7 @@ body.legal-page {
 .range {
     position: relative;
     height: 22px;
+    cursor: pointer;
 }
 
 .range-track {
@@ -806,7 +807,7 @@ body.legal-page {
     height: 8px;
     border-radius: 4px;
     overflow: hidden;
-    background: linear-gradient(90deg, #003FFF 8.33%, #009FFF 25%, #00FFFF 41.67%, #FFFFFF 58.33%, #ECB2FA 75%, #9F3FFF 91.67%);
+    background: repeating-linear-gradient(90deg, transparent 0 calc(16.667% - 3px), rgba(22, 24, 32, 0.45) calc(16.667% - 3px) 16.667%), linear-gradient(90deg, #003FFF 8.33%, #009FFF 25%, #00FFFF 41.67%, #FFFFFF 58.33%, #ECB2FA 75%, #9F3FFF 91.67%);
 }
 
 .range-dim {
@@ -852,7 +853,7 @@ body.legal-page {
     height: 18px;
     border: 3px solid #161820;
     border-radius: 50%;
-    background: #FFFFFF;
+    background: var(--knob, #FFFFFF);
     cursor: pointer;
     pointer-events: auto;
 }
@@ -862,7 +863,7 @@ body.legal-page {
     height: 12px;
     border: 3px solid #161820;
     border-radius: 50%;
-    background: #FFFFFF;
+    background: var(--knob, #FFFFFF);
     cursor: pointer;
     pointer-events: auto;
 }

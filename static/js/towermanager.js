@@ -307,8 +307,17 @@ function open_pack(id) {
     $("#pack-victors").html(victor_rows(names, "No pack victors yet"));
 }
 
+function range_color(value) {
+    let stops = [[0x00, 0x3F, 0xFF], [0x00, 0x9F, 0xFF], [0x00, 0xFF, 0xFF], [0xFF, 0xFF, 0xFF], [0xEC, 0xB2, 0xFA], [0x9F, 0x3F, 0xFF]];
+    let pos = Math.min(Math.max((value - 800) / 599 * 6 - 0.5, 0), 5);
+    let i = Math.min(Math.floor(pos), 4);
+    return `rgb(${stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * (pos - i))).join(",")})`;
+}
+
 function show_range() {
     let [low, high] = diff_range();
+    $("#diff-min").css("--knob", range_color(low));
+    $("#diff-max").css("--knob", range_color(high));
     $("#diff-range-label").text(`${format_num(low / 100)} - ${format_num(high / 100)}`);
     $("#range-dim-low").css("width", `${(low - 800) / 599 * 100}%`);
     $("#range-dim-high").css("width", `${(1399 - high) / 599 * 100}%`);
@@ -318,6 +327,18 @@ $("#diff-min, #diff-max").on("input", function () {
     let [low, high] = diff_range();
     if (low > high) $(this.id == "diff-min" ? "#diff-max" : "#diff-min").val(this.value);
     show_range();
+});
+$(".range").on("pointerdown", function (e) {
+    if ($(e.target).is("input")) return;
+    let box = this.getBoundingClientRect();
+    let to_value = x => Math.round(800 + Math.min(Math.max((x - box.left - 9) / (box.width - 18), 0), 1) * 599);
+    let value = to_value(e.clientX);
+    let [low, high] = diff_range();
+    let knob = $(value - low < high - value ? "#diff-min" : "#diff-max");
+    knob.val(value).trigger("input");
+    $(document).on("pointermove.range", e => knob.val(to_value(e.clientX)).trigger("input"));
+    $(document).one("pointerup.range", () => $(document).off("pointermove.range"));
+    e.preventDefault();
 });
 $("#game-filter, #diff-min, #diff-max").on("input", render_towers);
 $("#username").on("input", function () {
