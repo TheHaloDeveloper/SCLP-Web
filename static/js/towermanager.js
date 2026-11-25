@@ -138,7 +138,6 @@ function victor_rows(names, empty) {
 }
 
 let tables = {};
-let done_towers = new Set();
 
 function render_rows(table, items, row) {
     tables[table] = {items, row, count: 0};
@@ -159,18 +158,6 @@ $(".list").on("scroll", function () {
     let table = $(this).find("table").attr("id");
     if (tables[table]) more_rows(table);
 });
-
-function done_ids() {
-    let player = checked_player();
-    return new Set(player ? player.completions : []);
-}
-
-function mark_done() {
-    done_towers = done_ids();
-    for (let row of document.getElementById("towers-table").rows) {
-        row.querySelector("a").className = `table-row-link ${done_towers.has(+row.dataset.id) ? "tower-link-done" : "tower-link"}`;
-    }
-}
 
 function diff_range() {
     return [+$("#diff-min").val(), +$("#diff-max").val()];
@@ -195,7 +182,8 @@ function render_towers() {
     let search = query();
     let place = $("#game-filter").val();
     let [low, high] = diff_range();
-    done_towers = done_ids();
+    let player = checked_player();
+    let done_towers = new Set(player ? player.completions : []);
 
     let matches = towers.filter(t => {
         if (sort == "quality" && t.quality == null) return false;
@@ -244,7 +232,8 @@ function filter_packs() {
 }
 
 function checked_player() {
-    return find_player($("#username").val());
+    if (!me) return false;
+    return players.find(p => p.userid == me.id) || find_player(me.name);
 }
 
 function done_count(pack, player) {
@@ -355,12 +344,6 @@ $(".diff-text").on("keydown", function (e) {
     slider.val(Math.min(Math.max(+slider.val() + (e.key == "ArrowUp" ? step : -step), 800), 1399)).trigger("input");
 });
 $("#game-filter, #diff-min, #diff-max").on("input", render_towers);
-$("#username").on("input", function () {
-    mark_done();
-    render_packs();
-    localStorage.setItem("sclp-username", $(this).val());
-});
-$("#username").val(localStorage.getItem("sclp-username") || "");
 $("#country-filter").on("change", render_players);
 
 function bind_sort(name, sort, dir, render) {
@@ -609,6 +592,7 @@ window.addEventListener('popstate', event => restore(() => {
 
 show_range();
 build_lookups();
+$("#account-profile").toggle(Boolean(checked_player()));
 render_towers();
 render_players();
 render_packs();

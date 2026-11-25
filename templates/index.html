@@ -39,12 +39,18 @@
         <div id="nav">
             <div id="nav-links"></div>
             <div id="nav-right">
-                <a href="https://www.towerstats.com/clans/6" target="_blank" id="clan-link">
-                    <img src="/static/images/towerstats.webp" id="towerstats-icon">
-                    <span id="clan-text">CLAN</span>
-                </a>
+                {% if user %}
+                <div id="account">
+                    <button type="button" id="account-name">{{ user.name }}</button>
+                    <div id="account-menu" class="hidden">
+                        <button type="button" id="account-profile">Profile</button>
+                        <a href="/logout">Sign out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="/login" id="sign-in">Sign in</a>
+                {% endif %}
                 <img src="/static/images/discord.webp" id="discord">
-                <input type="text" id="username" placeholder="Player...">
             </div>
         </div>
         <div id="home-page" class="hidden">

@@ -179,7 +179,7 @@ p {
     flex: 11 1 0;
 }
 
-#search, #username, #game-filter, #player-sort, #country-filter, #tower-sort, #pack-sort, #player-creation-filter {
+#search, #game-filter, #player-sort, #country-filter, #tower-sort, #pack-sort, #player-creation-filter {
     display: inline-block;
     vertical-align: middle;
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -189,18 +189,14 @@ p {
     background: rgba(0, 0, 0, 0.3);
 }
 
-#search, #username {
+#search {
     padding: 0 16px;
 }
 
-#search:focus, #username:focus, #game-filter:focus, #player-sort:focus, #country-filter:focus, #tower-sort:focus, #pack-sort:focus, #player-creation-filter:focus, .sort-dir:focus-visible {
+#search:focus, #game-filter:focus, #player-sort:focus, #country-filter:focus, #tower-sort:focus, #pack-sort:focus, #player-creation-filter:focus, .sort-dir:focus-visible {
     outline: none;
     border-color: rgba(255, 255, 255, 0.25);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
-}
-
-#username {
-    height: 36px;
 }
 
 .nav-link {
@@ -704,29 +700,55 @@ body.legal-page {
     cursor: pointer;
 }
 
-#clan-link {
+#sign-in {
     display: flex;
     align-items: center;
-    gap: 6px;
-    text-decoration: none;
+    height: 36px;
+    padding: 0 14px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 0 10px 0 6px;
-    height: 36px;
-}
-
-#towerstats-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-}
-
-#clan-text {
     font-size: 16px;
-    font-weight: bold;
-    letter-spacing: 1px;
+    text-decoration: none;
+}
+
+#account {
+    position: relative;
+}
+
+#account-name, #account-menu button, #account-menu a {
+    border: none;
+    background: none;
+    font-size: 16px;
+}
+
+#account-name {
+    padding: 0 4px;
+}
+
+#account-menu {
+    position: absolute;
+    top: calc(100% + 14px);
+    right: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: 6px;
+    background: #171a20;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+#account-menu button, #account-menu a {
+    padding: 8px 12px;
+    border-radius: 6px;
     text-align: left;
+    text-decoration: none;
+}
+
+#account-menu button:hover, #account-menu a:hover {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 ::-webkit-scrollbar {

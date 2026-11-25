@@ -230,6 +230,16 @@ $("#search").on("input", () => search_filters[current_page]?.());
 
 let scotw;
 
+$("#account-name").on("click", function (e) {
+    e.stopPropagation();
+    $("#account-menu").toggleClass("hidden");
+});
+$("#account-profile").on("click", function () {
+    $("#account-menu").addClass("hidden");
+    open_player(checked_player().username);
+});
+$(document).on("click", () => $("#account-menu").addClass("hidden"));
+
 document.getElementById('discord').addEventListener('click', function() {
     window.open('https://discord.gg/t9crQndHyn', '_blank');
 });

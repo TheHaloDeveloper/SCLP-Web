@@ -1,9 +1,12 @@
-from flask import Flask, render_template, make_response, jsonify, request
+from flask import Flask, render_template, make_response, jsonify, request, session, redirect, url_for
 from dotenv import load_dotenv
 import os
 import json
 import math
 import hashlib
+import base64
+import secrets
+from urllib.parse import urlencode
 import requests
 import pycountry
 import time
@@ -11,9 +14,13 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from werkzeug.middleware.proxy_fix import ProxyFix
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.secret_key = hashlib.sha256(f"session-{os.getenv('ROBLOX_CLIENT_SECRET')}".encode()).hexdigest()
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 
 def get_data(r):
     url = f"https://sheets.googleapis.com/v4/spreadsheets/1PCndMCuQkslsWITs19Q2YaLFa16XnpUZzts4npzCjtE/values/{r}?key={os.getenv('GOOGLE_SHEETS_API_KEY')}" # will set up a db for a lot of this stuff later
@@ -269,7 +276,8 @@ def page_meta():
 
 @app.route("/")
 def home():
-    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+    user = session.get("user")
+    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta(), user=user)
 
 @app.route("/data.js")
 def data_js():
@@ -277,6 +285,51 @@ def data_js():
     response.headers["Content-Type"] = "application/javascript; charset=utf-8"
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable" if request.args.get("v") == data["version"] else "no-store"
     return response
+
+@app.route("/login")
+def login():
+    verifier = secrets.token_urlsafe(64)
+    state = secrets.token_urlsafe(16)
+    session["oauth"] = {"state": state, "verifier": verifier}
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    return redirect("https://apis.roblox.com/oauth/v1/authorize?" + urlencode({
+        "client_id": os.getenv("ROBLOX_CLIENT_ID"),
+        "redirect_uri": url_for("callback", _external=True),
+        "scope": "openid profile",
+        "response_type": "code",
+        "state": state,
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+    }))
+
+@app.route("/callback")
+def callback():
+    oauth = session.pop("oauth", None)
+    code = request.args.get("code")
+    if not oauth or not code or not secrets.compare_digest(request.args.get("state", ""), oauth["state"]):
+        return redirect("/")
+    token = requests.post("https://apis.roblox.com/oauth/v1/token", data={
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": url_for("callback", _external=True),
+        "client_id": os.getenv("ROBLOX_CLIENT_ID"),
+        "client_secret": os.getenv("ROBLOX_CLIENT_SECRET"),
+        "code_verifier": oauth["verifier"],
+    }, timeout=10)
+    if not token.ok:
+        return redirect("/")
+    info = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers={"Authorization": f"Bearer {token.json()['access_token']}"}, timeout=10)
+    if not info.ok:
+        return redirect("/")
+    user = info.json()
+    session.permanent = True
+    session["user"] = {"id": user["sub"], "name": user.get("preferred_username") or user["name"]}
+    return redirect("/")
+
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect("/")
 
 @app.route("/privacy-policy")
 def privacy_policy():

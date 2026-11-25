@@ -87,7 +87,7 @@
         min-width: 0;
     }
 
-    #search, #username, #game-filter {
+    #search, #game-filter {
         font-size: 0.8em;
         height: 1.5em;
     }
@@ -172,20 +172,6 @@
 
     #discord {
         width: 30px;
-    }
-
-    #clan-link {
-        height: 30px;
-        padding: 3px 8px 3px 5px;
-    }
-
-    #towerstats-icon {
-        width: 20px;
-        height: 20px;
-    }
-
-    #clan-text {
-        font-size: 12px;
     }
 
     #pack-victors {
