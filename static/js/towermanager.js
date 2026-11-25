@@ -318,7 +318,8 @@ function show_range() {
     let [low, high] = diff_range();
     $("#diff-min").css("--knob", range_color(low));
     $("#diff-max").css("--knob", range_color(high));
-    $("#diff-range-label").text(`${format_num(low / 100)} - ${format_num(high / 100)}`);
+    $("#diff-min-text").val(format_num(low / 100));
+    $("#diff-max-text").val(format_num(high / 100));
     $("#range-dim-low").css("width", `${(low - 800) / 599 * 100}%`);
     $("#range-dim-high").css("width", `${(1399 - high) / 599 * 100}%`);
 }
@@ -339,6 +340,19 @@ $(".range").on("pointerdown", function (e) {
     $(document).on("pointermove.range", e => knob.val(to_value(e.clientX)).trigger("input"));
     $(document).one("pointerup.range", () => $(document).off("pointermove.range"));
     e.preventDefault();
+});
+$(".diff-text").on("change", function () {
+    let value = Math.round(parseFloat(this.value) * 100);
+    if (!isNaN(value)) $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max").val(Math.min(Math.max(value, 800), 1399)).trigger("input");
+    show_range();
+});
+$(".diff-text").on("keydown", function (e) {
+    if (e.key == "Enter") this.blur();
+    if (e.key != "ArrowUp" && e.key != "ArrowDown") return;
+    e.preventDefault();
+    let slider = $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max");
+    let step = e.shiftKey ? 10 : 1;
+    slider.val(Math.min(Math.max(+slider.val() + (e.key == "ArrowUp" ? step : -step), 800), 1399)).trigger("input");
 });
 $("#game-filter, #diff-min, #diff-max").on("input", render_towers);
 $("#username").on("input", function () {

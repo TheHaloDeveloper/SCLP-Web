@@ -134,6 +134,7 @@ let search_filters = {
 };
 
 function open_page(page_name) {
+    let changed = page_name != current_page;
     current_page = page_name;
     $(".nav-link").each(function () {
         $(this).toggleClass("active", $(this).data("page") == page_name);
@@ -141,7 +142,7 @@ function open_page(page_name) {
     for (let page of pages) {
         $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name);
     }
-    if (search_slots[page_name]) {
+    if (changed && search_slots[page_name]) {
         $("#search").appendTo(search_slots[page_name]).val("");
     }
     push_url();

@@ -817,6 +817,29 @@ body.legal-page {
     font-size: 16px;
 }
 
+.diff-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-text {
+    width: 64px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 16px;
+    text-align: center;
+}
+
+.diff-text:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
 .range-head span:first-child {
     color: #a0a8b0;
 }
