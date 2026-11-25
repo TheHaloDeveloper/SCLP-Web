@@ -46,7 +46,10 @@ function build_lookups() {
     player_lookup = Object.fromEntries(players.map(p => [p.username, p]));
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
     derive_data();
-    tower_names = Object.fromEntries(towers.map(t => [t.id, [t.name.toLowerCase(), abbr(t.name).toLowerCase()]]));
+    tower_names = Object.fromEntries(towers.map(t => {
+        let others = `${t["alternate name(s)"]},${t["previous name(s)"]}`.split(",").map(n => n.trim()).filter(n => n.length > 1);
+        return [t.id, [t.name, abbr(t.name), ...others, ...others.map(abbr)].map(n => n.toLowerCase())];
+    }));
 
     pack_info = Object.fromEntries(packs.map(p => [p.id, {
         hardest: hardest(p.towers),
@@ -188,8 +191,7 @@ function render_towers() {
     let matches = towers.filter(t => {
         if (sort == "quality" && t.quality == null) return false;
         if (sort == "length" && String(t["time/length"] || "").trim() == "") return false;
-        let [name, abbr] = tower_names[t.id];
-        return (name.includes(search) || abbr.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
+        return tower_names[t.id].some(name => name.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
     matches.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
     render_rows("towers-table", matches, t => tower_row(t, td_right(last(t)), done_towers.has(t.id) ? "tower-link-done" : "tower-link", `data-id="${t.id}"`));

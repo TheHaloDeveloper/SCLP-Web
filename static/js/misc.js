@@ -52,12 +52,13 @@ function format_num(num) {
 }
 
 function abbr(x) {
-    x = x.replace("CumpleAnos", "Cumple Anos").replace(" Facility", "").replace("GBJ Edition", "G B J").replace(/\.([^\s])/g, ' $1').split(" (")[0];
+    x = x.trim().replace("CumpleAnos", "Cumple Anos").replace(" Facility", "").replace("GBJ Edition", "G B J").replace(/\.([^\s])/g, ' $1').replace(/\s*\([^)]*\)$/, "");
     return x.replace(":", " :").replaceAll('-', ' ').split(' ').map(word => {
-        if (!word) return '';
-        if (/^\d+$/.test(word)) return word[0];
-        let letter = word[0];
-        let digit = word.match(/\d/);
+        if (word == ":") return word;
+        let [letter, ...rest] = Array.from(word.replace(/^[^\p{L}\p{N}]+/u, ""));
+        if (!letter) return '';
+        if (/\d/.test(letter)) return letter;
+        let digit = rest.join("").match(/\d/);
         return (letter == letter.toLowerCase() ? letter : letter.toUpperCase()) + (digit ? digit[0] : '');
     }).join('');
 }
