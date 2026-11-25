@@ -19,12 +19,15 @@ load_dotenv()
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.secret_key = hashlib.sha256(f"session-{os.getenv('ROBLOX_CLIENT_SECRET')}".encode()).hexdigest()
+app.secret_key = hashlib.sha256(f"session-{os.environ['ROBLOX_CLIENT_SECRET']}".encode()).hexdigest()
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 
 def get_data(r):
     url = f"https://sheets.googleapis.com/v4/spreadsheets/1PCndMCuQkslsWITs19Q2YaLFa16XnpUZzts4npzCjtE/values/{r}?key={os.getenv('GOOGLE_SHEETS_API_KEY')}" # will set up a db for a lot of this stuff later
-    values = requests.get(url, timeout=20).json().get("values", [])
+    res = requests.get(url, timeout=20)
+    if not res.ok:
+        raise RuntimeError(f"sheets request for {r} failed with {res.status_code}")
+    values = res.json().get("values", [])
     if len(values) < 2:
         return []
 
@@ -106,7 +109,7 @@ tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "cre
 
 def build():
     with ThreadPoolExecutor(max_workers=4) as pool:
-        players, towers, games, countries = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B"])
+        players, towers, games, countries, scotw_points = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B", "scotwpoints!A:B"])
 
     flags = {}
     for c in countries:
@@ -173,6 +176,7 @@ def build():
         "packs": packs,
         "victors_by_tower": victors_by_tower,
         "pack_victors": pack_victors,
+        "scotw_points": scotw_points,
         "script": script,
         "version": hashlib.md5(script.encode()).hexdigest()[:12],
     }
@@ -235,8 +239,6 @@ def refresh_bot_data():
 
 threading.Thread(target=refresh_bot_data, daemon=True).start()
 
-scotw_points = get_data("scotwpoints!A:B")
-
 def player_identity(player):
     return str(player.get("userid") or player.get("username", "")).strip()
 
@@ -279,7 +281,7 @@ def page_meta():
 @app.route("/")
 def home():
     user = session.get("user")
-    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": scotw_points, "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": data["scotw_points"], "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
 
 @app.route("/data.js")
 def data_js():
@@ -310,20 +312,21 @@ def callback():
     code = request.args.get("code")
     if not oauth or not code or not secrets.compare_digest(request.args.get("state", ""), oauth["state"]):
         return redirect("/")
-    token = requests.post("https://apis.roblox.com/oauth/v1/token", data={
-        "grant_type": "authorization_code",
-        "code": code,
-        "redirect_uri": url_for("callback", _external=True),
-        "client_id": os.getenv("ROBLOX_CLIENT_ID"),
-        "client_secret": os.getenv("ROBLOX_CLIENT_SECRET"),
-        "code_verifier": oauth["verifier"],
-    }, timeout=10)
-    if not token.ok:
+    try:
+        token = requests.post("https://apis.roblox.com/oauth/v1/token", data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": url_for("callback", _external=True),
+            "client_id": os.getenv("ROBLOX_CLIENT_ID"),
+            "client_secret": os.getenv("ROBLOX_CLIENT_SECRET"),
+            "code_verifier": oauth["verifier"],
+        }, timeout=10)
+        info = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers={"Authorization": f"Bearer {token.json()['access_token']}"}, timeout=10) if token.ok else None
+        user = info.json() if info and info.ok else None
+    except (requests.RequestException, KeyError, ValueError):
+        user = None
+    if not user:
         return redirect("/")
-    info = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers={"Authorization": f"Bearer {token.json()['access_token']}"}, timeout=10)
-    if not info.ok:
-        return redirect("/")
-    user = info.json()
     session.permanent = True
     session["user"] = {"id": user["sub"], "name": user.get("preferred_username") or user["name"]}
     return redirect("/")

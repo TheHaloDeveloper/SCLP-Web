@@ -38,12 +38,16 @@ function title_case(str) {
     return str.replace(/\w\S*/g, text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase());
 }
 
+function esc(text) {
+    return String(text ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+
 function colored(text, color) {
     return color ? `<span style="color: ${color}">${text}</span>` : text;
 }
 
 for (let {name, color, members} of staff) {
-    if (members.length) $("#credits").append(`<h3><div>${colored(`[${name}]`, color)}</div>${members.join(", ")}</h3>`);
+    if (members.length) $("#credits").append(`<h3><div>${colored(`[${name}]`, color)}</div>${members.map(esc).join(", ")}</h3>`);
 }
 
 function format_num(num) {
@@ -198,7 +202,7 @@ function filter_rows(table, keep) {
 function render_scotw() {
     let tower = tower_lookup[scotw.Tower];
     $("#scotw-title").attr("class", diff_name(tower.difficulty));
-    $("#scotw-title").html(`<button class="tower-link" onclick="open_tower(${tower.id})">${tower.name}</button>`);
+    $("#scotw-title").html(`<button class="tower-link" onclick="open_tower(${tower.id})">${esc(tower.name)}</button>`);
 
     let lb = scotw_points.map(p => ({username: p.username, points: +p.points})).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
     $("#scotw-table").html(lb.map((e, i) => player_row(e.username, i + 1, td_right(`${e.points} pts`))).join(""));

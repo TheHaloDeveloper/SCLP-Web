@@ -106,7 +106,7 @@ function tower_row(t, last, button = "tower-link", attrs = "") {
     return `
         <tr ${attrs}>
             <td class="${diff_name(t.difficulty)}">#${t.rank}</td>
-            <td><a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${t.name}</a></td>
+            <td><a class="table-row-link ${button}" href="/?t=${t.id}" onclick="return open_tower_row_link(event, ${t.id})">${esc(t.name)}</a></td>
             ${last}
         </tr>
     `;
@@ -117,14 +117,14 @@ function diff_row(t, button) {
 }
 
 function pack_button(pack, button = "pack-link") {
-    return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button>`;
+    return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
 }
 
 function player_row(name, rank, last) {
     let player = find_player(name);
     let encoded_name = encodeURIComponent(player ? player_identifier(player) : name).replace(/'/g, "%27");
     return `
-        <tr data-name="${name.toLowerCase()}">
+        <tr data-name="${esc(name.toLowerCase())}">
             <td>#${rank}</td>
             <td>${player ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>` : role(name, true)}</td>
             ${last}
@@ -269,7 +269,7 @@ function render_packs() {
     $("#packs-table").html(sorted_packs.map(pack => {
         let done = pack.towers.length > 0 && done_count(pack, player) == pack.towers.length;
         return `
-            <tr data-name="${pack.name.toLowerCase()}">
+            <tr data-name="${esc(pack.name.toLowerCase())}">
                 <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
                 <td>${pack_button(pack, done ? "pack-link-done" : "pack-link")}</td>
                 ${td_right(last(pack))}
@@ -286,7 +286,7 @@ function open_pack(id) {
     let player = checked_player();
     let names = pack_victors[id];
 
-    $("#pack-name").html(pack.name);
+    $("#pack-name").html(esc(pack.name));
     $("#pack-progress").html(`${done_count(pack, player)}/${pack.towers.length}`);
     $("#pack-bonus").html(`${format_num(pack.xp)} XP`);
     $("#pack-victor-count").html(names.length);
@@ -372,7 +372,7 @@ bind_sort("pack", "xp", "asc", render_packs);
 function places_html(tower) {
     return tower.places.map(([abbr, extra]) => {
         let href = abbr == "Place" ? tower.game : game_lookup[abbr]?.link;
-        return `<a href='${href}' target='_blank'>${extra ? `${abbr}, ${extra}` : abbr}</a>`;
+        return `<a href='${esc(href)}' target='_blank'>${esc(extra ? `${abbr}, ${extra}` : abbr)}</a>`;
     }).join(" / ");
 }
 
@@ -398,7 +398,7 @@ $(document).on("click", "a[data-open]", function (e) {
 function render_tower_creators(creators) {
     let creator_links = names => names.map(c => {
         let player = find_player(c);
-        return player ? entity_link("u", player.username, c) : c;
+        return player ? entity_link("u", player.username, esc(c)) : esc(c);
     }).join(", ");
     let toggle = label => `<button type="button" class="link-button" onclick="toggle_tower_creators()">${label}</button>`;
     if (creators.length <= 5) return creator_links(creators);
@@ -433,7 +433,7 @@ function open_tower(id) {
         return names ? `${label}: ${names}` : "";
     };
 
-    $("#tower-name").html(`(${abbr(tower.name)}) ${tower.name}`);
+    $("#tower-name").html(`(${esc(abbr(tower.name))}) ${esc(tower.name)}`);
     show_info("#tower-alternate-names", known_as("alternate name(s)", "also known as"), "text");
     show_info("#tower-previous-names", known_as("previous name(s)", "previously known as"), "text");
     $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
@@ -445,7 +445,7 @@ function open_tower(id) {
     show_info("#tower-quality", tower.quality ? row_html("Quality", `<span class="${quality_cls(tower.quality)}">${tower.quality}</span>`) : "");
     show_info("#tower-length", tower["time/length"] ? row_html("Length", `${format_length(tower["time/length"])} minutes`) : "");
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
-    show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, pack.name)).join(", ")) : "");
+    show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
     $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
 }
 
@@ -463,8 +463,8 @@ function level_text(xp, level_only) {
 function role(name, html = false) {
     let found = roles[name];
     if (!html) return found || "";
-    if (found) return colored(name, role_colors[found]);
-    return cool_members.includes(name) ? `<span class="cool">${name}</span>` : name;
+    if (found) return colored(esc(name), role_colors[found]);
+    return cool_members.includes(name) ? `<span class="cool">${esc(name)}</span>` : esc(name);
 }
 
 function add_badges(player, role) {
@@ -518,8 +518,8 @@ function open_player(name, rank) {
     let got_all = Object.values(counts).reduce(sum, 0);
     let total_all = Object.values(diff_totals).reduce(sum, 0);
 
-    $("#player-name").html(`${username} ${flag_html(player.nationality)}`);
-    $("#player-role").html(job ? colored(job, role_colors[job]) : "");
+    $("#player-name").html(`${esc(username)} ${flag_html(player.nationality)}`);
+    $("#player-role").html(job ? colored(esc(job), role_colors[job]) : "");
     $("#player-xp").html(format_num(player.total_xp));
     $("#player-level").html(level_text(player.total_xp));
     $("#player-rank").html(`#${rank || player.rank}`);
@@ -581,7 +581,7 @@ $("#player-details").on("scroll", function () {
 
 $("#game-filter").html("<option value=''>All</option><option value='Place'>Place</option>");
 for (let game of games) {
-    $("#game-filter").append(`<option value='${game.abbr}'>${game.abbr}</option>`);
+    $("#game-filter").append(`<option value='${esc(game.abbr)}'>${esc(game.abbr)}</option>`);
 }
 
 window.addEventListener('popstate', event => restore(() => {
