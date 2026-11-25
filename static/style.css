@@ -6,7 +6,7 @@
 
 html {
     font-size: 20px;
-    background: #161820;
+    background: #0f1115;
     color: #FFFFFF;
     font-family: "Montserrat", sans-serif;
 }
@@ -19,7 +19,7 @@ html, body {
 
 body {
     margin: 0;
-    padding: 8px;
+    padding: 16px;
 }
 
 html:has(body.legal-page) {
@@ -65,7 +65,7 @@ span {
     gap: 24px;
     width: 100%;
     margin: 20px 0 14px;
-    border-bottom: 1px solid #303540;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .player-tower-tab {
@@ -135,20 +135,26 @@ p {
     flex-grow: 1;
     display: flex;
     flex-direction: row;
-    height: calc(100% - 50px);
+    min-height: 0;
+    gap: 12px;
 }
 
 #nav {
-    background: linear-gradient(145deg, #505a64, #40454f);
+    background: #171a20;
     width: 100%;
-    height: 50px;
+    height: 56px;
+    margin-bottom: 12px;
     flex-shrink: 0;
     border-radius: 10px;
     display: flex;
     align-items: center;
-    padding: 0 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    border: 1px solid #606870;
+    padding: 0 9px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#nav-links {
+    display: flex;
+    gap: 4px;
 }
 
 #nav-right {
@@ -159,7 +165,7 @@ p {
 }
 
 .left, .right {
-    padding: 5px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -176,30 +182,41 @@ p {
 #search, #username, #game-filter, #player-sort, #country-filter, #tower-sort, #pack-sort, #player-creation-filter {
     display: inline-block;
     vertical-align: middle;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    height: 36px;
-    font-size: 20px;
-    background: #505A64;
+    height: 40px;
+    font-size: 16px;
+    background: rgba(0, 0, 0, 0.3);
 }
 
 #search, #username {
-    padding: 2px;
-    padding-left: 15px;
+    padding: 0 16px;
+}
+
+#search:focus, #username:focus, #game-filter:focus, #player-sort:focus, #country-filter:focus, #tower-sort:focus, #pack-sort:focus, #player-creation-filter:focus, .sort-dir:focus-visible {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 
 #username {
-    background-color: #161820;
+    height: 36px;
 }
 
 .nav-link {
     background: transparent;
     border: none;
-    font-size: 20px;
+    border-radius: 8px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 18px;
+    color: #a0a8b0;
+    cursor: pointer;
 }
 
-.nav-link:hover {
-    text-decoration: underline;
+.nav-link.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
 }
 
 .list {
@@ -212,15 +229,14 @@ p {
 #towers-table, #players-table, #packs-table {
     width: 100%;
     table-layout: fixed;
-    padding: 0 30px 30px 0;
+    padding: 0 0 16px;
     border-collapse: separate;
-    border-spacing: 20px 5px;
+    border-spacing: 16px 5px;
 }
 
 #towers-table td:first-child, #players-table td:first-child, #packs-table td:first-child {
     width: 60px;
-    text-align: right;
-    padding-right: 10px;
+    text-align: left;
 }
 
 #towers-table tr td:last-child {
@@ -273,24 +289,22 @@ p {
 }
 
 .tower-link:hover, .tower-link-done:hover, .player-link:hover, .pack-link:hover, .pack-link-done:hover {
-    background: #363840;
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .card {
-    background: linear-gradient(145deg, #1e2127, #252830);
-    border: 1px solid #303540;
+    background: #171a20;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 #tower-details, #player-details, #pack-details {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     width: 100%;
     flex-grow: 1;
     font-size: 20px;
-    padding: 20px;
+    padding: 16px;
     overflow-y: auto;
     text-align: left;
 }
@@ -309,20 +323,24 @@ p {
     margin: 0 !important;
 }
 
+.card .big {
+    margin: 0 0 4px !important;
+}
+
 .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 8px 0 12px;
+    gap: 12px;
+    margin: 16px 0 8px;
 }
 
 .stat {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 10px 14px;
-    background: #1a1d23;
-    border: 1px solid #303540;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
 }
 
@@ -333,7 +351,7 @@ p {
 
 .stat .stat-label {
     font-size: 14px;
-    color: #8a929c;
+    color: #a0a8b0;
 }
 
 .stat span, .row span {
@@ -344,8 +362,8 @@ p {
     display: grid;
     grid-template-columns: 190px 1fr;
     gap: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid #2a2e37;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     line-height: 1.3;
 }
 
@@ -354,9 +372,10 @@ p {
 }
 
 .section-heading {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px solid #303540;
+    margin-top: 20px;
+    padding-top: 16px;
+    margin-bottom: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     font-size: 22px;
     font-weight: bold;
 }
@@ -374,8 +393,13 @@ p {
 }
 
 #player-sort, #country-filter, #tower-sort, #game-filter, #pack-sort, #player-creation-filter {
-    padding: 2px 10px 2px 15px;
+    padding: 0 40px 0 16px;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("/static/images/chevron.svg");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
 }
 
 .Insane {
@@ -518,7 +542,7 @@ body.legal-page {
 
 #player-stats td, #player-stats th {
     padding: 5px 4px;
-    border-bottom: 1px solid #2a2e37;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 #player-stats th:first-child {
@@ -676,7 +700,7 @@ body.legal-page {
 }
 
 #discord {
-    width: 35px;
+    width: 30px;
     cursor: pointer;
 }
 
@@ -685,14 +709,11 @@ body.legal-page {
     align-items: center;
     gap: 6px;
     text-decoration: none;
-    background: #505A64;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 4px 10px 4px 6px;
+    padding: 0 10px 0 6px;
     height: 36px;
-}
-
-#clan-link:hover {
-    background: #606870;
 }
 
 #towerstats-icon {
@@ -702,7 +723,7 @@ body.legal-page {
 }
 
 #clan-text {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: bold;
     letter-spacing: 1px;
     text-align: left;
@@ -733,64 +754,71 @@ body.legal-page {
 
 .toolbar {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 14px 12px;
     margin-bottom: 12px;
     padding: 16px;
-    border: 1px solid #303540;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    background: linear-gradient(145deg, #1e2127, #252830);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    background: #171a20;
 }
 
 .toolbar #search {
     width: 100%;
 }
 
+#towers-search, #players-search, #packs-search {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
 .toolbar-row {
-    display: flex;
-    gap: 10px;
+    display: contents;
+}
+
+.toolbar > div:has(.range) {
+    flex: 1 1 100%;
 }
 
 .sort-row {
     display: flex;
-    flex: 1 1 0;
+    flex: 1 1 220px;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
 }
 
 #tower-sort, #player-sort, #pack-sort {
-    font-size: 15px;
+    border-radius: 8px 0 0 8px;
     width: 100%;
     flex: 1 1 auto;
     min-width: 0;
 }
 
 #country-filter, #game-filter {
-    flex: 1 1 0;
+    flex: 1 1 150px;
     min-width: 0;
-    font-size: 15px;
 }
 
 .sort-dir {
     flex: 0 0 auto;
-    border: none;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    background: #505A64;
+    border-radius: 0 8px 8px 0;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     padding: 0;
-}
-
-.sort-dir:hover {
-    background: #5c6773;
 }
 
 .range-head {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.range-head span:first-child {
+    color: #a0a8b0;
 }
 
 .range {
@@ -807,14 +835,14 @@ body.legal-page {
     height: 8px;
     border-radius: 4px;
     overflow: hidden;
-    background: repeating-linear-gradient(90deg, transparent 0 calc(16.667% - 3px), rgba(22, 24, 32, 0.45) calc(16.667% - 3px) 16.667%), linear-gradient(90deg, #003FFF 8.33%, #009FFF 25%, #00FFFF 41.67%, #FFFFFF 58.33%, #ECB2FA 75%, #9F3FFF 91.67%);
+    background: repeating-linear-gradient(90deg, transparent 0 calc(16.667% - 3px), rgba(23, 26, 32, 0.6) calc(16.667% - 3px) 16.667%), linear-gradient(90deg, #003FFF 8.33%, #009FFF 25%, #00FFFF 41.67%, #FFFFFF 58.33%, #ECB2FA 75%, #9F3FFF 91.67%);
 }
 
 .range-dim {
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(22, 24, 32, 0.85);
+    background: rgba(23, 26, 32, 0.85);
 }
 
 #range-dim-low {
@@ -851,7 +879,7 @@ body.legal-page {
     appearance: none;
     width: 18px;
     height: 18px;
-    border: 3px solid #161820;
+    border: 3px solid #171a20;
     border-radius: 50%;
     background: var(--knob, #FFFFFF);
     cursor: pointer;
@@ -861,7 +889,7 @@ body.legal-page {
 .range input::-moz-range-thumb {
     width: 12px;
     height: 12px;
-    border: 3px solid #161820;
+    border: 3px solid #171a20;
     border-radius: 50%;
     background: var(--knob, #FFFFFF);
     cursor: pointer;
@@ -872,8 +900,8 @@ body.legal-page {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     margin: 8px 9px 0;
-    font-size: 13px;
-    color: #8a929c;
+    font-size: 14px;
+    color: #a0a8b0;
 }
 
 .range-names span {

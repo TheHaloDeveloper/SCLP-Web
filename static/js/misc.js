@@ -110,7 +110,7 @@ document.querySelectorAll("input").forEach(input => {
 
 let pages = ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"];
 for (let page of pages) {
-    $("#nav-links").append(`<button class="nav-link" onclick="open_page('${page}')" onmousedown="middle_click(event, '/?page=${page.toLowerCase()}')">${page}</button>`);
+    $("#nav-links").append(`<button class="nav-link" data-page="${page}" onclick="open_page('${page}')" onmousedown="middle_click(event, '/?page=${page.toLowerCase()}')">${page}</button>`);
 }
 
 let current_page = "Home";
@@ -135,6 +135,9 @@ let search_filters = {
 
 function open_page(page_name) {
     current_page = page_name;
+    $(".nav-link").each(function () {
+        $(this).toggleClass("active", $(this).data("page") == page_name);
+    });
     for (let page of pages) {
         $(`#${page.toLowerCase()}-page`).toggleClass("hidden", page != page_name);
     }
