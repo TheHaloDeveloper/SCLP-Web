@@ -806,7 +806,7 @@ body.legal-page {
     height: 8px;
     border-radius: 4px;
     overflow: hidden;
-    background: linear-gradient(90deg, #003FFF 0 16.67%, #009FFF 16.67% 33.33%, #00FFFF 33.33% 50%, #FFFFFF 50% 66.67%, #ECB2FA 66.67% 83.33%, #9F3FFF 83.33%);
+    background: linear-gradient(90deg, #003FFF 8.33%, #009FFF 25%, #00FFFF 41.67%, #FFFFFF 58.33%, #ECB2FA 75%, #9F3FFF 91.67%);
 }
 
 .range-dim {
