@@ -132,14 +132,6 @@ function player_row(name, rank, last) {
     `;
 }
 
-function victor_rows(names, empty) {
-    let rows = names.filter(name => player_lookup[name]).map(name => {
-        let p = player_lookup[name];
-        return player_row(name, p.rank, td_right(`Level ${level_text(p.total_xp, true)}`));
-    }).join("");
-    return rows || empty_row(empty);
-}
-
 let tables = {};
 
 function render_rows(table, items, row) {
@@ -156,10 +148,22 @@ function more_rows(table) {
     $("#" + table).append(next.map(state.row).join(""));
 }
 
-$(".list").on("scroll", function () {
+function render_victors(table, names, empty) {
+    let victors = names.filter(name => player_lookup[name]);
+    if (!victors.length) {
+        delete tables[table];
+        $("#" + table).html(empty_row(empty));
+        return;
+    }
+    render_rows(table, victors, name => {
+        let p = player_lookup[name];
+        return player_row(name, p.rank, td_right(`Level ${level_text(p.total_xp, true)}`));
+    });
+}
+
+$(".list, #tower-details, #pack-details, #player-details").on("scroll", function () {
     if (this.scrollTop + this.clientHeight < this.scrollHeight - 800) return;
-    let table = $(this).find("table").attr("id");
-    if (tables[table]) more_rows(table);
+    $(this).find("table").each((i, table) => tables[table.id] && more_rows(table.id));
 });
 
 function diff_range() {
@@ -293,7 +297,7 @@ function open_pack(id) {
 
     let pack_towers = pack.towers.map(tid => tower_lookup[tid]).filter(Boolean).sort((a, b) => a.difficulty - b.difficulty);
     $("#pack-towers").html(pack_towers.map(t => diff_row(t, player && player.completions.includes(t.id) ? "tower-link-done" : "tower-link")).join(""));
-    $("#pack-victors").html(victor_rows(names, "No pack victors yet"));
+    render_victors("pack-victors", names, "No pack victors yet");
 }
 
 function range_color(value) {
@@ -446,7 +450,7 @@ function open_tower(id) {
     show_info("#tower-length", tower["time/length"] ? row_html("Length", `${format_length(tower["time/length"])} minutes`) : "");
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
     show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
-    $("#tower-victors").html(victor_rows(victors_by_tower[id], "No SCLP victors yet"));
+    render_victors("tower-victors", victors_by_tower[id], "No SCLP victors yet");
 }
 
 function level_text(xp, level_only) {
@@ -575,9 +579,6 @@ function open_player(name, rank) {
 
 $("#player-creation-filter").on("change", render_player_creations);
 
-$("#player-details").on("scroll", function () {
-    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 800) more_rows("player-towers");
-});
 
 $("#game-filter").html("<option value=''>All</option><option value='Place'>Place</option>");
 for (let game of games) {
