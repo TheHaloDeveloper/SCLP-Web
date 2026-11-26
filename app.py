@@ -161,12 +161,15 @@ def build():
         for pack in player_packs[name]:
             pack_victors[pack["id"]].append(name)
 
+    country_names = {c.alpha_2.lower(): c.name for c in pycountry.countries}
+
     page = {
         "players": players,
         "towers": [{key: tower[key] for key in tower_fields if key in tower} for tower in towers],
         "games": games,
         "packs": packs,
         "diff_totals": diff_totals,
+        "country_names": country_names,
     }
     script = "".join(f"{name}={json.dumps(value, separators=(',', ':'), ensure_ascii=False)};" for name, value in page.items())
 
