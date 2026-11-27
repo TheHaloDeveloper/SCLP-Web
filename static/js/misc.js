@@ -25,13 +25,36 @@ function avg_diff(tower_ids) {
     return values.length ? average(values.map(v => Math.round(v * 100))) / 100 : 0;
 }
 
-function avg_quality(tower_ids) {
-    let ranks = tower_ids.map(id => tower_lookup[id]).filter(t => t && t.quality != null).map(t => quality_order[t.quality]);
-    if (ranks.length == 0) return null;
-    let avg_rank = average(ranks);
-    return Object.keys(quality_order).reduce((best, key) =>
-        Math.abs(quality_order[key] - avg_rank) < Math.abs(quality_order[best] - avg_rank) ? key : best
-    );
+const TIERS = [
+    [98, "#d600ff"],
+    [95, "#a120ec"],
+    [92, "#6b40d9"],
+    [90, "#5d57e2"],
+    [87, "#506eeb"],
+    [83, "#4285f4"],
+    [80, "#3d91be"],
+    [77, "#399c89"],
+    [73, "#34a853"],
+    [70, "#73b148"],
+    [67, "#b2b93d"],
+    [63, "#f1c232"],
+    [60, "#edb234"],
+    [57, "#eaa136"],
+    [53, "#e69138"],
+    [50, "#dd6125"],
+    [40, "#d53013"],
+    [30, "#cc0000"],
+    [20, "#bb3333"],
+    [0, "#797981"],
+];
+
+function enjoyability_span(v) {
+    return `<span style="color: ${TIERS.find(([min]) => Math.round(v) >= min)[1]}">${Math.round(v)}</span>`;
+}
+
+function avg_enjoyability(tower_ids) {
+    let values = tower_ids.map(id => tower_lookup[id]).filter(t => t && t.enjoyability != null).map(t => t.enjoyability);
+    return values.length ? average(values) : null;
 }
 
 function title_case(str) {

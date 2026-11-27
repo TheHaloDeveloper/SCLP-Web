@@ -27,7 +27,7 @@
                         <input type="text" id="search" placeholder="Search...">
                     </div>
                     <div class="toolbar-row">
-                        {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("quality", "Quality"), ("length", "Tower Length")]) }}
+                        {{ sort_box("tower", [("difficulty", "Difficulty"), ("victors", "Victors"), ("enjoyability", "Enjoyability"), ("length", "Tower Length")]) }}
                         <select id="game-filter"></select>
                     </div>
                     <div>
@@ -70,7 +70,8 @@
                         <p class="row" id="tower-creator"></p>
                         <p class="row"><span class="label">Location</span><span id="tower-location"></span></p>
                         <p class="row"><span class="label">Completion XP</span><span id="tower-xp"></span></p>
-                        <p class="row" id="tower-quality"></p>
+                        <p class="row" id="tower-enjoyability"></p>
+                        <p class="row" id="tower-rating"></p>
                         <p class="row" id="tower-length"></p>
                         <p class="row" id="tower-packs"></p>
 
@@ -136,7 +137,7 @@
                 <div class="toolbar">
                     <div id="packs-search"></div>
                     <div class="toolbar-row">
-                        {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("quality", "Quality"), ("victors", "Victors")]) }}
+                        {{ sort_box("pack", [("xp", "Bonus XP"), ("towers", "Tower Count"), ("hardest", "Hardest Tower"), ("progress_percentage", "Completion (%)"),("progress_towers_left", "Towers Left"), ("enjoyability", "Enjoyability"), ("victors", "Victors")]) }}
                     </div>
                 </div>
                 <div class="list">

@@ -440,7 +440,7 @@ p {
     color: #9F3FFF;
 }
 
-.Nil, .quality-x {
+.Nil {
     color: #797981;
 }
 
@@ -793,15 +793,6 @@ body.legal-page {
     border: 2px solid transparent;
 }
 
-.quality-ss { color: #FF72DF; }
-.quality-s-plus { color: #FF6BA3; }
-.quality-s, .quality-s-minus { color: #FF7F7F; }
-.quality-a { color: #FEBF7F; }
-.quality-b { color: #FFDF80; }
-.quality-c { color: #FFFF7F; }
-.quality-d { color: #C0FF7F; }
-.quality-f { color: #7FFFFF; }
-
 .toolbar {
     container-type: inline-size;
     display: flex;
@@ -874,7 +865,7 @@ body.legal-page {
     gap: 8px;
 }
 
-.diff-text {
+.diff-text, #my-rating, #rating-save {
     width: 64px;
     height: 28px;
     padding: 0 8px;
@@ -885,7 +876,7 @@ body.legal-page {
     text-align: center;
 }
 
-.diff-text:focus {
+.diff-text:focus, #my-rating:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.25);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);

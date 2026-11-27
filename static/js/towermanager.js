@@ -12,9 +12,8 @@ let player_towers = {};
 let tower_creators_expanded = false;
 let player_created_towers = [];
 
-let quality_order = {
-    "SS": 0, "S+": 1, "S": 2, "S-": 3, "A+": 4, "A": 5, "A-": 6, "B+": 7, "B": 8, "B-": 9, "C+": 10, "C": 11, "C-": 12, "D+": 13, "D": 14, "D-": 15, "F+": 16, "F": 17, "F-": 18, "X": 19, "Z": 20
-};
+let my_enjoyability = {};
+if (me) fetch("/my_enjoyability").then(r => r.json()).then(data => my_enjoyability = data);
 
 function victors(id) {
     return victors_by_tower[id].length;
@@ -54,7 +53,7 @@ function build_lookups() {
     pack_info = Object.fromEntries(packs.map(p => [p.id, {
         hardest: hardest(p.towers),
         avg_diff: avg_diff(p.towers),
-        avg_quality: avg_quality(p.towers),
+        avg_enjoyability: avg_enjoyability(p.towers),
     }]));
     [...packs].sort((a, b) => b.xp - a.xp).forEach((p, i) => pack_info[p.id].rank = i + 1);
 
@@ -176,13 +175,13 @@ function render_towers() {
     let value = {
         difficulty: t => -t.rank,
         victors: t => victors(t.id),
-        quality: t => -quality_order[t.quality],
+        enjoyability: t => t.enjoyability,
         length: t => parseInt(t.length, 10),
     }[sort];
     let last = {
         difficulty: t => diff_span(t.difficulty),
         victors: t => victors(t.id),
-        quality: t => `<span class="${quality_cls(t.quality)}">${t.quality}</span>`,
+        enjoyability: t => enjoyability_span(t.enjoyability),
         length: t => format_length(t.length),
     }[sort];
 
@@ -193,7 +192,7 @@ function render_towers() {
     let done_towers = new Set(player ? player.completions : []);
 
     let matches = towers.filter(t => {
-        if (sort == "quality" && t.quality == null) return false;
+        if (sort == "enjoyability" && t.enjoyability == null) return false;
         if (sort == "length" && !t.length) return false;
         return tower_names[t.id].some(name => name.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
@@ -254,7 +253,7 @@ function render_packs() {
         hardest: p => pack_info[p.id].hardest,
         progress_towers_left: p => p.towers.length - done_count(p, player),
         progress_percentage: p => p.towers.length ? done_count(p, player) / p.towers.length : 0,
-        quality: p => quality_order[pack_info[p.id].avg_quality],
+        enjoyability: p => pack_info[p.id].avg_enjoyability,
         victors: p => pack_victors[p.id].length,
     }[sort];
     let last = {
@@ -263,11 +262,11 @@ function render_packs() {
         hardest: p => diff_span(pack_info[p.id].hardest),
         progress_towers_left: p => `${p.towers.length - done_count(p, player)} left`,
         progress_percentage: p => `${(value(p) * 100).toFixed(1)}%`,
-        quality: p => `<span class="${quality_cls(pack_info[p.id].avg_quality)}">${pack_info[p.id].avg_quality}</span>`,
+        enjoyability: p => enjoyability_span(pack_info[p.id].avg_enjoyability),
         victors: p => pack_victors[p.id].length,
     }[sort];
 
-    let sorted_packs = packs.filter(p => sort != "quality" || pack_info[p.id].avg_quality != null);
+    let sorted_packs = packs.filter(p => sort != "enjoyability" || pack_info[p.id].avg_enjoyability != null);
     sorted_packs.sort((a, b) => sign * (value(b) - value(a)) || (sort == "xp" ? -sign * (pack_info[b.id].rank - pack_info[a.id].rank) : 0));
 
     $("#packs-table").html(sorted_packs.map(pack => {
@@ -380,11 +379,6 @@ function places_html(tower) {
     }).join(" / ");
 }
 
-function quality_cls(q) {
-    let suffix = q == "S+" ? "-plus" : q == "S-" ? "-minus" : "";
-    return "quality-" + q.replace(/[+\-]$/, "").toLowerCase() + suffix;
-}
-
 function entity_link(kind, key, label) {
     return `<a href="/?${kind}=${encodeURIComponent(key)}" data-open="${kind}" data-key="${encodeURIComponent(key)}">${label}</a>`;
 }
@@ -425,6 +419,27 @@ function show_info(selector, content, method = "html") {
     $(selector)[method](content).toggle(Boolean(content));
 }
 
+function render_enjoyability(tower) {
+    let player = checked_player();
+    show_info("#tower-enjoyability", tower.votes ? row_html("Enjoyability", `${enjoyability_span(tower.enjoyability)} (${tower.votes} ${tower.votes == 1 ? "vote" : "votes"})`) : "");
+    show_info("#tower-rating", player && player.completions.includes(tower.id) ? row_html("Your rating", `<input type="number" id="my-rating" min="0" max="100" value="${my_enjoyability[tower.id] ?? ""}"> <button id="rating-save">Save</button> <span id="rating-error"></span>`) : "");
+}
+
+$(document).on("click", "#rating-save", function () {
+    let rating = $("#my-rating").val().trim();
+    rating = rating == "" ? null : Number(rating);
+    fetch("/enjoyability", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({tower_id: current_tower_id, rating})}).then(r => r.json().then(body => ({ok: r.ok, body}))).then(({ok, body}) => {
+        if (!ok) return $("#rating-error").text(body.error);
+        let tower = tower_lookup[current_tower_id];
+        tower.enjoyability = body.enjoyability;
+        tower.votes = body.votes;
+        if (rating == null) delete my_enjoyability[tower.id];
+        else my_enjoyability[tower.id] = rating;
+        for (let p of packs) pack_info[p.id].avg_enjoyability = avg_enjoyability(p.towers);
+        render_enjoyability(tower);
+    });
+});
+
 function open_tower(id) {
     current_tower_id = id;
     tower_creators_expanded = false;
@@ -446,7 +461,7 @@ function open_tower(id) {
     show_info("#tower-creator", tower.creators.length ? row_html("Creators", render_tower_creators(tower.creators)) : "");
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
-    show_info("#tower-quality", tower.quality ? row_html("Quality", `<span class="${quality_cls(tower.quality)}">${tower.quality}</span>`) : "");
+    render_enjoyability(tower);
     show_info("#tower-length", tower.length ? row_html("Length", `${format_length(tower.length)} minutes`) : "");
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
     show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
@@ -578,7 +593,6 @@ function open_player(name, rank) {
 }
 
 $("#player-creation-filter").on("change", render_player_creations);
-
 
 $("#game-filter").html("<option value=''>All</option><option value='Place'>Place</option>");
 for (let game of games) {
