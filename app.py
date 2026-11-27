@@ -61,7 +61,7 @@ def parse_packs(raw, tower_by_id):
         packs.append({"id": pack["id"], "name": pack["name"], "towers": pack["towers"], "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
-tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "quality", "length", "alternate_names", "previous_names"]
+tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "quality", "length", "alternate_names", "previous_names", "enjoyability", "votes"]
 
 def load_db():
     return (
@@ -70,13 +70,17 @@ def load_db():
         db.query("select abbr, name, link from games order by lower(abbr)"),
         db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
         [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
+        {r["tower_id"]: r for r in db.query("select tower_id, round(avg(rating), 1)::float8 as enjoyability, count(*)::int as votes from enjoyability group by tower_id")},
     )
 
 def build():
-    players, towers, games, scotw_points, raw_packs = load_db()
+    players, towers, games, scotw_points, raw_packs, enjoyability = load_db()
 
     for tower in towers:
         tower["xp"] = math.floor(3 ** round(tower["difficulty"] - 8, 2) * 100)
+        found = enjoyability.get(tower["id"], {})
+        tower["enjoyability"] = found.get("enjoyability")
+        tower["votes"] = found.get("votes", 0)
         if tower["game"]:
             tower["places"].append(["Place", ""])
     tower_by_id = {t["id"]: t for t in towers}
@@ -288,6 +292,30 @@ def callback():
     session.permanent = True
     session["user"] = {"id": user["sub"], "name": user.get("preferred_username") or user["name"]}
     return redirect("/")
+
+@app.route("/my_enjoyability")
+def my_enjoyability():
+    user = session.get("user")
+    rows = db.query("select tower_id, rating from enjoyability where user_id = %s", (int(user["id"]),)) if user else []
+    return jsonify({r["tower_id"]: r["rating"] for r in rows})
+
+@app.route("/enjoyability", methods=["POST"])
+def set_enjoyability():
+    user = session.get("user")
+    if not user:
+        return jsonify(error="sign in to rate enjoyability"), 401
+    uid = int(user["id"])
+    body = request.get_json(silent=True) or {}
+    tower_id, rating = body.get("tower_id"), body.get("rating")
+    if type(tower_id) is not int or (rating is not None and (type(rating) is not int or not 0 <= rating <= 100)):
+        return jsonify(error="Rating must be 0-100."), 400
+    if rating is None:
+        db.query("delete from enjoyability where user_id = %s and tower_id = %s", (uid, tower_id))
+        return jsonify(ok=True)
+    saved = db.query("insert into enjoyability (user_id, tower_id, rating) select c.user_id, c.tower_id, %s from completions c join towers t on t.id = c.tower_id where c.user_id = %s and c.tower_id = %s and t.removed_at is null on conflict (user_id, tower_id) do update set rating = excluded.rating, rated_at = now() returning 1", (rating, uid, tower_id))
+    if not saved:
+        return jsonify(error="Beat this tower to rate it."), 403
+    return jsonify(ok=True)
 
 @app.route("/logout")
 def logout():
