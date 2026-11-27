@@ -876,6 +876,15 @@ body.legal-page {
     text-align: center;
 }
 
+#my-rating {
+    -moz-appearance: textfield;
+}
+
+#my-rating::-webkit-inner-spin-button, #my-rating::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .diff-text:focus, #my-rating:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.25);
