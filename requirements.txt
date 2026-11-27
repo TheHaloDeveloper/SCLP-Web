@@ -4,3 +4,4 @@ python-dotenv
 pycountry
 gunicorn
 tzdata
+psycopg2-binary
