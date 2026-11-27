@@ -74,11 +74,6 @@ function diff_span(d) {
     return `<span class="${diff_name(d)}">${format_num(d)}</span>`;
 }
 
-function format_length(length) {
-    let value = String(length ?? "").trim();
-    return value && !value.endsWith("+") ? `${value}+` : value;
-}
-
 function plain_click(event) {
     return event.button == 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
@@ -176,13 +171,13 @@ function render_towers() {
         difficulty: t => -t.rank,
         victors: t => victors(t.id),
         enjoyability: tower_enjoyability,
-        length: t => parseInt(t.length, 10),
+        length: t => t.length,
     }[sort];
     let last = {
         difficulty: t => diff_span(t.difficulty),
         victors: t => victors(t.id),
         enjoyability: t => enjoyability_span(tower_enjoyability(t)),
-        length: t => format_length(t.length),
+        length: t => `${t.length}+`,
     }[sort];
 
     let search = query();
@@ -461,7 +456,7 @@ function open_tower(id) {
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
     render_enjoyability(tower);
-    show_info("#tower-length", tower.length ? row_html("Length", `${format_length(tower.length)} minutes`) : "");
+    show_info("#tower-length", tower.length ? row_html("Length", `${tower.length}+ minutes`) : "");
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
     show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
     render_victors("tower-victors", victors_by_tower[id], "No SCLP victors yet");
