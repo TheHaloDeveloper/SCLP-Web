@@ -21,7 +21,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = hashlib.sha256(f"session-{os.environ['ROBLOX_CLIENT_SECRET']}".encode()).hexdigest()
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 
-diffs = [(900, "Insane"), (1000, "Extreme"), (1100, "Terrifying"), (1200, "Catastrophic"), (1300, "Horrific"), (1400, "Unreal"), (99999, "Nil")]
+diffs = [(9, "Insane"), (10, "Extreme"), (11, "Terrifying"), (12, "Catastrophic"), (13, "Horrific"), (14, "Unreal"), (999, "Nil")]
 player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("packs", "Packs Completed"), ("hardest", "Hardest Tower")] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
 
 def diff_name(d):
@@ -66,7 +66,7 @@ tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "cre
 def load_db():
     return (
         [{"username": r["username"], "user_id": str(r["user_id"]), "nationality": r["nationality"], "completions": r["completions"]} for r in db.query("select p.username, p.user_id, p.nationality, coalesce(array_agg(c.tower_id) filter (where c.tower_id is not null), '{}') as completions from players p left join completions c using (user_id) group by p.user_id order by p.user_id")],
-        db.query("select id, name, difficulty, places, game, quality, length, creators, alternate_names, previous_names from towers where removed_at is null"),
+        db.query("select id, name, difficulty::float8 as difficulty, places, game, quality, length, creators, alternate_names, previous_names from towers where removed_at is null"),
         db.query("select abbr, name, link from games order by lower(abbr)"),
         db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
         [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
@@ -76,7 +76,7 @@ def build():
     players, towers, games, scotw_points, raw_packs = load_db()
 
     for tower in towers:
-        tower["xp"] = math.floor((3 ** ((tower["difficulty"] - 800) / 100)) * 100)
+        tower["xp"] = math.floor(3 ** round(tower["difficulty"] - 8, 2) * 100)
         if tower["game"]:
             tower["places"].append(["Place", ""])
     tower_by_id = {t["id"]: t for t in towers}
@@ -166,7 +166,7 @@ def tower_data():
 
 @app.route("/tower_data_csv")
 def tower_data_csv():
-    lines = ["difficulty,name"] + [f'{t["difficulty"]},{t["name"]}' for t in sorted(data["towers"], key=lambda t: t["difficulty"])]
+    lines = ["difficulty,name"] + [f'{t["difficulty"]:.2f},{t["name"]}' for t in sorted(data["towers"], key=lambda t: t["difficulty"])]
     response = make_response("\n".join(lines))
     response.headers['Content-Type'] = 'text/csv'
     response.headers['Content-Disposition'] = 'attachment; filename=tower_data.csv'
@@ -230,7 +230,7 @@ def page_meta():
         meta["description"] = f'Rank #{player["rank"]} | Level {level_of(player["total_xp"])} | {player["total_xp"]:,} XP | {len(player["completions"])} SCs beaten'
     elif tower:
         meta["title"] = f'{tower["name"]} - SCLP'
-        meta["description"] = f'{diff_name(tower["difficulty"])} ({tower["difficulty"] / 100:g}) | Rank #{tower["rank"]} | {len(data["victors_by_tower"][tower["id"]])} victors'
+        meta["description"] = f'{diff_name(tower["difficulty"])} ({tower["difficulty"]:g}) | Rank #{tower["rank"]} | {len(data["victors_by_tower"][tower["id"]])} victors'
     elif pack:
         meta["title"] = f'{pack["name"]} - SCLP'
         meta["description"] = f'{len(pack["towers"])} towers | {pack["xp"]:,} bonus XP | {len(data["pack_victors"][pack["id"]])} victors'

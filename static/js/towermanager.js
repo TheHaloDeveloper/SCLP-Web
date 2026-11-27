@@ -72,7 +72,7 @@ function empty_row(msg) {
 }
 
 function diff_span(d) {
-    return `<span class="${diff_name(d)}">${format_num(d / 100)}</span>`;
+    return `<span class="${diff_name(d)}">${format_num(d)}</span>`;
 }
 
 function format_length(length) {
@@ -302,7 +302,7 @@ function open_pack(id) {
 
 function range_color(value) {
     let stops = [[0x00, 0x3F, 0xFF], [0x00, 0x9F, 0xFF], [0x00, 0xFF, 0xFF], [0xFF, 0xFF, 0xFF], [0xEC, 0xB2, 0xFA], [0x9F, 0x3F, 0xFF]];
-    let pos = Math.min(Math.max((value - 800) / 599 * 6 - 0.5, 0), 5);
+    let pos = Math.min(Math.max((value - 8) / 5.99 * 6 - 0.5, 0), 5);
     let i = Math.min(Math.floor(pos), 4);
     return `rgb(${stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * (pos - i))).join(",")})`;
 }
@@ -311,10 +311,10 @@ function show_range() {
     let [low, high] = diff_range();
     $("#diff-min").css("--knob", range_color(low));
     $("#diff-max").css("--knob", range_color(high));
-    $("#diff-min-text").val(format_num(low / 100));
-    $("#diff-max-text").val(format_num(high / 100));
-    $("#range-dim-low").css("width", `${(low - 800) / 599 * 100}%`);
-    $("#range-dim-high").css("width", `${(1399 - high) / 599 * 100}%`);
+    $("#diff-min-text").val(format_num(low));
+    $("#diff-max-text").val(format_num(high));
+    $("#range-dim-low").css("width", `${(low - 8) / 5.99 * 100}%`);
+    $("#range-dim-high").css("width", `${(13.99 - high) / 5.99 * 100}%`);
 }
 
 $("#diff-min, #diff-max").on("input", function () {
@@ -325,7 +325,7 @@ $("#diff-min, #diff-max").on("input", function () {
 $(".range").on("pointerdown", function (e) {
     if ($(e.target).is("input")) return;
     let box = this.getBoundingClientRect();
-    let to_value = x => Math.round(800 + Math.min(Math.max((x - box.left - 9) / (box.width - 18), 0), 1) * 599);
+    let to_value = x => Math.round((8 + Math.min(Math.max((x - box.left - 9) / (box.width - 18), 0), 1) * 5.99) * 100) / 100;
     let value = to_value(e.clientX);
     let [low, high] = diff_range();
     let knob = $(value - low < high - value ? "#diff-min" : "#diff-max");
@@ -335,8 +335,8 @@ $(".range").on("pointerdown", function (e) {
     e.preventDefault();
 });
 $(".diff-text").on("change", function () {
-    let value = Math.round(parseFloat(this.value) * 100);
-    if (!isNaN(value)) $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max").val(Math.min(Math.max(value, 800), 1399)).trigger("input");
+    let value = Math.round(parseFloat(this.value) * 100) / 100;
+    if (!isNaN(value)) $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max").val(Math.min(Math.max(value, 8), 13.99)).trigger("input");
     show_range();
 });
 $(".diff-text").on("keydown", function (e) {
@@ -344,8 +344,8 @@ $(".diff-text").on("keydown", function (e) {
     if (e.key != "ArrowUp" && e.key != "ArrowDown") return;
     e.preventDefault();
     let slider = $(this.id == "diff-min-text" ? "#diff-min" : "#diff-max");
-    let step = e.shiftKey ? 10 : 1;
-    slider.val(Math.min(Math.max(+slider.val() + (e.key == "ArrowUp" ? step : -step), 800), 1399)).trigger("input");
+    let step = e.shiftKey ? 0.1 : 0.01;
+    slider.val(Math.min(Math.max(Math.round((+slider.val() + (e.key == "ArrowUp" ? step : -step)) * 100) / 100, 8), 13.99)).trigger("input");
 });
 $("#game-filter, #diff-min, #diff-max").on("input", render_towers);
 $("#country-filter").on("change", render_players);
@@ -440,7 +440,7 @@ function open_tower(id) {
     $("#tower-name").html(`(${esc(abbr(tower.name))}) ${esc(tower.name)}`);
     show_info("#tower-alternate-names", known_as("alternate_names", "also known as"), "text");
     show_info("#tower-previous-names", known_as("previous_names", "previously known as"), "text");
-    $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
+    $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty)})`);
     $("#tower-location").html(places_html(tower));
     $("#tower-rank").html(tower.rank);
     show_info("#tower-creator", tower.creators.length ? row_html("Creators", render_tower_creators(tower.creators)) : "");
@@ -529,7 +529,7 @@ function open_player(name, rank) {
     $("#player-rank").html(`#${rank || player.rank}`);
 
     let diff_rows = [8, 9, 10, 11, 12, 13].map(d => {
-        let diff = diff_name(d * 100);
+        let diff = diff_name(d);
         let got = counts[diff] || 0;
         let total = diff_totals[diff] || 0;
         return `

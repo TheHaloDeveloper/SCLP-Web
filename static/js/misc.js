@@ -22,7 +22,7 @@ function hardest(tower_ids) {
 
 function avg_diff(tower_ids) {
     let values = tower_ids.map(id => tower_lookup[id]).filter(Boolean).map(t => t.difficulty);
-    return values.length ? average(values) : 0;
+    return values.length ? average(values.map(v => Math.round(v * 100))) / 100 : 0;
 }
 
 function avg_quality(tower_ids) {
@@ -72,7 +72,7 @@ function diff_name(d) {
 }
 
 function sub_range(d) {
-    d %= 100;
+    d = Math.round(d * 100) % 100;
     if (d == 0) return "Baseline";
     if (d == 99) return "Skyline";
     if (d < 12) return "Bottom";

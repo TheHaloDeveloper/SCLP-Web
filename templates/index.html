@@ -40,8 +40,8 @@
                                 <div class="range-dim" id="range-dim-low"></div>
                                 <div class="range-dim" id="range-dim-high"></div>
                             </div>
-                            <input type="range" id="diff-min" min="800" max="1399" value="800">
-                            <input type="range" id="diff-max" min="800" max="1399" value="1399">
+                            <input type="range" id="diff-min" min="8" max="13.99" step="0.01" value="8">
+                            <input type="range" id="diff-max" min="8" max="13.99" step="0.01" value="13.99">
                         </div>
                         <div class="range-names">
                             {% for d in diffs[:6] %}<span>{{ d[1] }}</span>{% endfor %}
