@@ -52,8 +52,12 @@ function enjoyability_span(v) {
     return `<span style="color: ${TIERS.find(([min]) => Math.round(v) >= min)[1]}">${Math.round(v)}</span>`;
 }
 
+function tower_enjoyability(t) {
+    return t.enjoyability ?? 50;
+}
+
 function avg_enjoyability(tower_ids) {
-    let values = tower_ids.map(id => tower_lookup[id]).filter(t => t && t.enjoyability != null).map(t => t.enjoyability);
+    let values = tower_ids.map(id => tower_lookup[id]).filter(Boolean).map(tower_enjoyability);
     return values.length ? average(values) : null;
 }
 

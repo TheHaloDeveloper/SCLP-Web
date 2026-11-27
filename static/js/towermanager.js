@@ -175,13 +175,13 @@ function render_towers() {
     let value = {
         difficulty: t => -t.rank,
         victors: t => victors(t.id),
-        enjoyability: t => t.enjoyability,
+        enjoyability: tower_enjoyability,
         length: t => parseInt(t.length, 10),
     }[sort];
     let last = {
         difficulty: t => diff_span(t.difficulty),
         victors: t => victors(t.id),
-        enjoyability: t => enjoyability_span(t.enjoyability),
+        enjoyability: t => enjoyability_span(tower_enjoyability(t)),
         length: t => format_length(t.length),
     }[sort];
 
@@ -192,7 +192,6 @@ function render_towers() {
     let done_towers = new Set(player ? player.completions : []);
 
     let matches = towers.filter(t => {
-        if (sort == "enjoyability" && t.enjoyability == null) return false;
         if (sort == "length" && !t.length) return false;
         return tower_names[t.id].some(name => name.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
@@ -421,7 +420,7 @@ function show_info(selector, content, method = "html") {
 
 function render_enjoyability(tower) {
     let player = checked_player();
-    show_info("#tower-enjoyability", tower.votes ? row_html("Enjoyability", `${enjoyability_span(tower.enjoyability)} (${tower.votes} ${tower.votes == 1 ? "vote" : "votes"})`) : "");
+    show_info("#tower-enjoyability", row_html("Enjoyability", `${enjoyability_span(tower_enjoyability(tower))} (${tower.votes == 1 ? "1 vote" : `${tower.votes || "no"} votes`})`));
     show_info("#tower-rating", player && player.completions.includes(tower.id) ? row_html("Your rating", `<input type="number" id="my-rating" min="0" max="100" value="${my_enjoyability[tower.id] ?? ""}"> <button id="rating-save">Save</button> <span id="rating-error"></span>`) : "");
 }
 
