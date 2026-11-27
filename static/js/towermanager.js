@@ -368,8 +368,9 @@ bind_sort("pack", "xp", "asc", render_packs);
 
 function places_html(tower) {
     return tower.places.map(([abbr, extra]) => {
-        let href = abbr == "Place" ? tower.game : game_lookup[abbr]?.link;
-        return `<a href='${esc(href)}' target='_blank'>${esc(extra ? `${abbr}, ${extra}` : abbr)}</a>`;
+        let href = abbr == "Place" ? tower.place_link : game_lookup[abbr]?.link;
+        let label = esc([abbr, extra].filter(Boolean).join(", "));
+        return href ? `<a href='${esc(href)}' target='_blank'>${label}</a>` : label;
     }).join(" / ");
 }
 

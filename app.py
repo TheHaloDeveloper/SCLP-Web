@@ -61,29 +61,37 @@ def parse_packs(raw, tower_by_id):
         packs.append({"id": pack["id"], "name": pack["name"], "towers": pack["towers"], "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
-tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "length", "alternate_names", "previous_names", "enjoyability", "votes"]
+tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "place_link", "creators", "length", "alternate_names", "previous_names", "enjoyability", "votes"]
 
 def load_enjoyability(tower_id=None):
     rows = db.query("select tower_id, round(avg(rating), 1)::float8 as enjoyability, count(*)::int as votes from enjoyability where %s::int is null or tower_id = %s group by tower_id", (tower_id, tower_id))
     return {r["tower_id"]: {"enjoyability": r["enjoyability"], "votes": r["votes"]} for r in rows}
 
+def load_places():
+    places = {}
+    for r in db.query("select tower_id, game, detail from tower_places order by tower_id, position"):
+        places.setdefault(r["tower_id"], []).append([r["game"] or "", r["detail"]])
+    return places
+
 def load_db():
     return (
         [{"username": r["username"], "user_id": str(r["user_id"]), "nationality": r["nationality"], "completions": r["completions"]} for r in db.query("select p.username, p.user_id, p.nationality, coalesce(array_agg(c.tower_id) filter (where c.tower_id is not null), '{}') as completions from players p left join completions c using (user_id) group by p.user_id order by p.user_id")],
-        db.query("select id, name, difficulty::float8 as difficulty, places, game, length, creators, alternate_names, previous_names from towers where removed_at is null"),
+        db.query("select id, name, difficulty::float8 as difficulty, place_link, length, creators, alternate_names, previous_names from towers where removed_at is null"),
         db.query("select abbr, name, link from games order by lower(abbr)"),
         db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
         [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
         load_enjoyability(),
+        load_places(),
     )
 
 def build():
-    players, towers, games, scotw_points, raw_packs, enjoyability = load_db()
+    players, towers, games, scotw_points, raw_packs, enjoyability, places = load_db()
 
     for tower in towers:
         tower["xp"] = math.floor(3 ** round(tower["difficulty"] - 8, 2) * 100)
         tower.update(enjoyability.get(tower["id"], {"enjoyability": None, "votes": 0}))
-        if tower["game"]:
+        tower["places"] = places.get(tower["id"], [])
+        if tower["place_link"]:
             tower["places"].append(["Place", ""])
     tower_by_id = {t["id"]: t for t in towers}
 
