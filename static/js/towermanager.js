@@ -487,7 +487,7 @@ function add_badges(player, role) {
 
 function flag_html(x) {
     if (!x) return `<span class="fi-placeholder" title="Unknown"></span>`;
-    return `<span class="fi fi-${x.toLowerCase()}" title="${x.toUpperCase()}"></span>`;
+    return `<span class="fi fi-${x.toLowerCase()}" title="${country_names[x.toLowerCase()] || x.toUpperCase()}"></span>`;
 }
 
 function show_player_tower_view(view) {
@@ -599,7 +599,7 @@ render_packs();
 
 let countries = [...new Set(players.map(p => p.nationality).filter(Boolean))].sort();
 for (let code of countries) {
-    $("#country-filter").append(`<option value="${code}">${code.toUpperCase()}</option>`);
+    $("#country-filter").append(`<option value="${code}">${country_names[code] || code.toUpperCase()}</option>`);
 }
 
 restore(() => {
