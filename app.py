@@ -8,41 +8,18 @@ import base64
 import secrets
 from urllib.parse import urlencode
 import requests
-import pycountry
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from werkzeug.middleware.proxy_fix import ProxyFix
 load_dotenv()
+import db
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = hashlib.sha256(f"session-{os.environ['ROBLOX_CLIENT_SECRET']}".encode()).hexdigest()
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
-
-def get_data(r):
-    url = f"https://sheets.googleapis.com/v4/spreadsheets/1PCndMCuQkslsWITs19Q2YaLFa16XnpUZzts4npzCjtE/values/{r}?key={os.getenv('GOOGLE_SHEETS_API_KEY')}" # will set up a db for a lot of this stuff later
-    res = requests.get(url, timeout=20)
-    if not res.ok:
-        raise RuntimeError(f"sheets request for {r} failed with {res.status_code}")
-    values = res.json().get("values", [])
-    if len(values) < 2:
-        return []
-
-    headers = values[0]
-    data = []
-    for row in values[1:]:
-        item = {}
-        for i, header in enumerate(headers):
-            val = row[i] if i < len(row) else ""
-            if header.lower() == "completions":
-                item[header] = [int(x) for x in val.split(",") if x]
-            else:
-                item[header] = val
-        data.append(item)
-    return data
 
 diffs = [(900, "Insane"), (1000, "Extreme"), (1100, "Terrifying"), (1200, "Catastrophic"), (1300, "Horrific"), (1400, "Unreal"), (99999, "Nil")]
 player_sorts = [("xp", "Level/XP"), ("completions", "SCs Beaten"), ("packs", "Packs Completed"), ("hardest", "Hardest Tower")] + [(f"most-{name.lower()}", f"{name} Towers") for limit, name in diffs[:6]]
@@ -63,75 +40,56 @@ def static_urls():
     def static_v(name):
         return f"/static/{name}?v={int(os.path.getmtime(os.path.join(app.static_folder, name)))}"
     user = session.get("user")
-    profile = next((player_identity(p) for p in data["players"] if user and (str(p.get("userid", "")) == user["id"] or str(p.get("username", "")).lower() == user["name"].lower())), None)
+    profile = next((player_identity(p) for p in data["players"] if user and (p["user_id"] == user["id"] or p["username"].lower() == user["name"].lower())), None)
     return {"static_v": static_v, "user": user, "profile": profile, "nav_pages": ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"]}
 
 @app.route("/favicon.ico")
 def favicon():
     return app.send_static_file("images/sclp.png")
 
-def country_code(x):
-    return pycountry.countries.lookup(x).alpha_2.lower()
-
-def parse_tower(tower):
-    tower["id"] = int(tower["id"])
-    tower["difficulty"] = int(tower["difficulty"])
-    tower["xp"] = math.floor((3 ** ((tower["difficulty"] - 800) / 100)) * 100)
-    parts = [part.strip() for part in tower["places"].split(";") if part.strip()]
-    tower["creators"] = [c.strip() for c in tower["creators"].split(",") if c.strip()]
-    tower["places"] = [p.split(",") for p in parts]
-
-    if tower["game"] == "":
-        tower["game"] = None
-    else:
-        tower["places"].append(["Place", ""])
-
-    tower["quality"] = tower["quality"].strip() or None
-
 def parse_packs(raw, tower_by_id):
     packs = []
     for pack in raw:
-        if pack["id"]:
-            ids = [int(pack[f"tower{i}"]) for i in range(1, 11) if pack[f"tower{i}"] != ""]
+        base_scores = [tower_by_id[tid]["xp"] for tid in pack["towers"] if tid in tower_by_id]
+        n = len(base_scores)
 
-            base_scores = [tower_by_id[tid]["xp"] for tid in ids if tid in tower_by_id]
-            n = len(base_scores)
-
-            if n > 0:
-                power_mean = pow(sum(pow(score, 1.5) for score in base_scores) / n, 1 / 1.5)
-                final_xp = math.floor(power_mean * (1.0 + (n - 3) * 0.10))
-            else:
-                final_xp = 0
-            packs.append({"id": pack["id"], "name": pack["name"], "towers": ids, "xp": final_xp})
+        if n > 0:
+            power_mean = pow(sum(pow(score, 1.5) for score in base_scores) / n, 1 / 1.5)
+            final_xp = math.floor(power_mean * (1.0 + (n - 3) * 0.10))
+        else:
+            final_xp = 0
+        packs.append({"id": pack["id"], "name": pack["name"], "towers": pack["towers"], "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
-tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "quality", "time/length", "alternate name(s)", "previous name(s)"]
+tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "game", "creators", "quality", "length", "alternate_names", "previous_names"]
+
+def load_db():
+    return (
+        [{"username": r["username"], "user_id": str(r["user_id"]), "nationality": r["nationality"], "completions": r["completions"]} for r in db.query("select p.username, p.user_id, p.nationality, coalesce(array_agg(c.tower_id) filter (where c.tower_id is not null), '{}') as completions from players p left join completions c using (user_id) group by p.user_id order by p.user_id")],
+        db.query("select id, name, difficulty, places, game, quality, length, creators, alternate_names, previous_names from towers where removed_at is null"),
+        db.query("select abbr, name, link from games order by lower(abbr)"),
+        db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
+        [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
+    )
 
 def build():
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        players, towers, games, countries, scotw_points = pool.map(get_data, ["comps!A:C", "towers!A:Q", "games!A:C", "nationalities!A:B", "scotwpoints!A:B"])
-
-    flags = {}
-    for c in countries:
-        try:
-            flags[c["username"]] = country_code(c["nationality"])
-        except Exception:
-            pass
+    players, towers, games, scotw_points, raw_packs = load_db()
 
     for tower in towers:
-        parse_tower(tower)
+        tower["xp"] = math.floor((3 ** ((tower["difficulty"] - 800) / 100)) * 100)
+        if tower["game"]:
+            tower["places"].append(["Place", ""])
     tower_by_id = {t["id"]: t for t in towers}
 
     for p in players:
         p["completions"] = list(set(p["completions"]))
-        p["nationality"] = flags.get(p["username"])
         p["xp"] = sum(tower_by_id[id]["xp"] for id in p["completions"] if id in tower_by_id)
 
     towers.sort(key=lambda t: (-t["difficulty"], -t["id"]))
     for rank, tower in enumerate(towers, 1):
         tower["rank"] = rank
 
-    packs = parse_packs(get_data("packs!A:M"), tower_by_id)
+    packs = parse_packs(raw_packs, tower_by_id)
 
     diff_totals = {}
     for tower in towers:
@@ -194,7 +152,7 @@ for attempt in range(5):
 def refresh():
     global data
     while True:
-        time.sleep(3600)
+        time.sleep(60)
         try:
             data = build()
         except Exception as e:
@@ -240,7 +198,7 @@ def refresh_bot_data():
 threading.Thread(target=refresh_bot_data, daemon=True).start()
 
 def player_identity(player):
-    return str(player.get("userid") or player.get("username", "")).strip()
+    return (player["user_id"] or player["username"]).strip()
 
 def level_of(xp):
     level = 0
@@ -356,11 +314,15 @@ def next_scotw(after):
 
 scotw_cache = {"time": 0, "value": None}
 
+def load_scotw():
+    row = db.query("select tower_id, extract(epoch from started_at)::bigint as time from scotw_state")[0]
+    return {"Tower": str(row["tower_id"]), "Time": str(row["time"])}
+
 @app.route("/get_scotw")
 def get_scotw():
     if time.time() - scotw_cache["time"] > 60:
         try:
-            scotw = get_data("scotw!A:B")[0]
+            scotw = load_scotw()
             start = datetime.fromtimestamp(int(scotw['Time']), tz=timezone.utc)
             scotw_cache.update(time=time.time(), value={**scotw, "Target": int(next_scotw(start).timestamp())})
         except Exception:

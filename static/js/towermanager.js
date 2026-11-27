@@ -47,7 +47,7 @@ function build_lookups() {
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
     derive_data();
     tower_names = Object.fromEntries(towers.map(t => {
-        let others = `${t["alternate name(s)"]},${t["previous name(s)"]}`.split(",").map(n => n.trim()).filter(n => n.length > 1);
+        let others = [...t.alternate_names, ...t.previous_names].filter(n => n.length > 1);
         return [t.id, [t.name, abbr(t.name), ...others, ...others.map(abbr)].map(n => n.toLowerCase())];
     }));
 
@@ -177,13 +177,13 @@ function render_towers() {
         difficulty: t => -t.rank,
         victors: t => victors(t.id),
         quality: t => -quality_order[t.quality],
-        length: t => parseInt(t["time/length"], 10),
+        length: t => parseInt(t.length, 10),
     }[sort];
     let last = {
         difficulty: t => diff_span(t.difficulty),
         victors: t => victors(t.id),
         quality: t => `<span class="${quality_cls(t.quality)}">${t.quality}</span>`,
-        length: t => format_length(t["time/length"]),
+        length: t => format_length(t.length),
     }[sort];
 
     let search = query();
@@ -194,7 +194,7 @@ function render_towers() {
 
     let matches = towers.filter(t => {
         if (sort == "quality" && t.quality == null) return false;
-        if (sort == "length" && String(t["time/length"] || "").trim() == "") return false;
+        if (sort == "length" && !t.length) return false;
         return tower_names[t.id].some(name => name.includes(search)) && t.difficulty >= low && t.difficulty <= high && (!place || t.places.some(p => p[0] == place));
     });
     matches.sort((a, b) => sign * (value(b) - value(a)) || sign * (b.rank - a.rank));
@@ -237,7 +237,7 @@ function filter_packs() {
 
 function checked_player() {
     if (!me) return false;
-    return players.find(p => p.userid == me.id) || find_player(me.name);
+    return players.find(p => p.user_id == me.id) || find_player(me.name);
 }
 
 function done_count(pack, player) {
@@ -433,13 +433,13 @@ function open_tower(id) {
     let diff = diff_name(tower.difficulty);
 
     let known_as = (field, label) => {
-        let names = tower[field]?.trim().replace(/,(?=\S)/g, ", ");
+        let names = tower[field].join(", ");
         return names ? `${label}: ${names}` : "";
     };
 
     $("#tower-name").html(`(${esc(abbr(tower.name))}) ${esc(tower.name)}`);
-    show_info("#tower-alternate-names", known_as("alternate name(s)", "also known as"), "text");
-    show_info("#tower-previous-names", known_as("previous name(s)", "previously known as"), "text");
+    show_info("#tower-alternate-names", known_as("alternate_names", "also known as"), "text");
+    show_info("#tower-previous-names", known_as("previous_names", "previously known as"), "text");
     $("#tower-diff").html(`<span class="${diff}">${sub_range(tower.difficulty)} ${diff}</span> (${format_num(tower.difficulty / 100)})`);
     $("#tower-location").html(places_html(tower));
     $("#tower-rank").html(tower.rank);
@@ -447,7 +447,7 @@ function open_tower(id) {
     $("#tower-xp").html(tower.xp);
     $("#tower-victor-count").html(victors(id));
     show_info("#tower-quality", tower.quality ? row_html("Quality", `<span class="${quality_cls(tower.quality)}">${tower.quality}</span>`) : "");
-    show_info("#tower-length", tower["time/length"] ? row_html("Length", `${format_length(tower["time/length"])} minutes`) : "");
+    show_info("#tower-length", tower.length ? row_html("Length", `${format_length(tower.length)} minutes`) : "");
     let tower_packs = packs.filter(pack => pack.towers.includes(id));
     show_info("#tower-packs", tower_packs.length ? row_html("Packs", tower_packs.map(pack => entity_link("pk", pack.id, esc(pack.name))).join(", ")) : "");
     render_victors("tower-victors", victors_by_tower[id], "No SCLP victors yet");

@@ -1,5 +1,5 @@
 function player_identifier(player) {
-    return String(player.userid || player.username || "").trim();
+    return String(player.user_id || player.username || "").trim();
 }
 
 function find_player(name) {
