@@ -39,9 +39,7 @@ def cache_headers(response):
 def static_urls():
     def static_v(name):
         return f"/static/{name}?v={int(os.path.getmtime(os.path.join(app.static_folder, name)))}"
-    user = session.get("user")
-    profile = next((player_identity(p) for p in data["players"] if user and (p["user_id"] == user["id"] or p["username"].lower() == user["name"].lower())), None)
-    return {"static_v": static_v, "user": user, "profile": profile, "nav_pages": ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"]}
+    return {"static_v": static_v, "user": session.get("user"), "nav_pages": ["Home", "Towers", "Leaderboard", "Packs", "SCoTW"]}
 
 @app.route("/favicon.ico")
 def favicon():
@@ -79,10 +77,10 @@ def load_places():
 
 def load_db():
     return (
-        [{"username": r["username"], "user_id": str(r["user_id"]), "nationality": r["nationality"], "completions": r["completions"]} for r in db.query("select p.username, p.user_id, p.nationality, coalesce(array_agg(c.tower_id) filter (where c.tower_id is not null), '{}') as completions from players p left join completions c using (user_id) group by p.user_id order by p.user_id")],
+        [{"id": str(r["user_id"]), "username": r["username"], "nationality": r["nationality"], "completions": r["completions"]} for r in db.query("select p.username, p.user_id, p.nationality, coalesce(array_agg(c.tower_id) filter (where c.tower_id is not null), '{}') as completions from players p left join completions c using (user_id) group by p.user_id order by p.user_id")],
         db.query("select id, name, difficulty::float8 as difficulty, place_link, length, creators, alternate_names, previous_names from towers where removed_at is null"),
         db.query("select abbr, name, link from games order by lower(abbr)"),
-        db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
+        db.query("select user_id::text as id, sum(tickets)::int as points from scotw_awards group by user_id"),
         [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
         load_places(),
     )
@@ -119,7 +117,7 @@ def build():
     for player in players:
         done = set(player["completions"])
         finished = [pack for pack in packs if pack["towers"] and done.issuperset(pack["towers"])]
-        player_packs[player["username"]] = finished
+        player_packs[player["id"]] = finished
         player["total_xp"] = player["xp"] + sum(pack["xp"] for pack in finished)
 
     players.sort(key=lambda p: p["total_xp"], reverse=True)
@@ -127,13 +125,12 @@ def build():
         player["rank"] = rank
 
     for player in players:
-        name = player["username"]
         for tid in player["completions"]:
             if tid in tower_by_id:
-                victors_by_tower[tid].append(name)
+                victors_by_tower[tid].append(player["id"])
 
-        for pack in player_packs[name]:
-            pack_victors[pack["id"]].append(name)
+        for pack in player_packs[player["id"]]:
+            pack_victors[pack["id"]].append(player["id"])
 
     page = {
         "players": players,
@@ -214,9 +211,6 @@ def refresh_bot_data():
 
 threading.Thread(target=refresh_bot_data, daemon=True).start()
 
-def player_identity(player):
-    return (player["user_id"] or player["username"]).strip()
-
 def level_of(xp):
     level = 0
     need = 175
@@ -235,11 +229,7 @@ def page_meta():
     player = None
     if user_value:
         target = user_value.strip().lower()
-        player = next((
-            p for p in data["players"]
-            if str(p.get("username", "")).lower() == target
-            or player_identity(p).lower() == target
-        ), None)
+        player = next((p for p in data["players"] if p["id"] == target or p["username"].lower() == target), None)
     tower = next((t for t in data["towers"] if str(t["id"]) == tower_id), None) if tower_id else None
     pack = next((p for p in data["packs"] if p["id"] == pack_id), None) if pack_id else None
     if player:

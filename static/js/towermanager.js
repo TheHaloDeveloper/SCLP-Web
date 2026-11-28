@@ -29,20 +29,20 @@ function derive_data() {
         for (let t of owned) {
             let diff = diff_name(t.difficulty);
             counts[diff] = (counts[diff] || 0) + 1;
-            victors_by_tower[t.id].push(p.username);
+            victors_by_tower[t.id].push(p.id);
         }
-        player_hardest[p.username] = owned.reduce((max, t) => Math.max(max, t.difficulty), 0);
-        diff_counts[p.username] = counts;
-        player_towers[p.username] = owned.sort((a, b) => a.rank - b.rank).map(t => t.id);
+        player_hardest[p.id] = owned.reduce((max, t) => Math.max(max, t.difficulty), 0);
+        diff_counts[p.id] = counts;
+        player_towers[p.id] = owned.sort((a, b) => a.rank - b.rank).map(t => t.id);
         for (let pack of packs) {
-            if (pack.towers.length && pack.towers.every(id => done.has(id))) pack_victors[pack.id].push(p.username);
+            if (pack.towers.length && pack.towers.every(id => done.has(id))) pack_victors[pack.id].push(p.id);
         }
     }
 }
 
 function build_lookups() {
     tower_lookup = Object.fromEntries(towers.map(t => [t.id, t]));
-    player_lookup = Object.fromEntries(players.map(p => [p.username, p]));
+    player_lookup = Object.fromEntries(players.map(p => [p.id, p]));
     game_lookup = Object.fromEntries(games.map(g => [g.abbr, g]));
     derive_data();
     tower_names = Object.fromEntries(towers.map(t => {
@@ -57,8 +57,8 @@ function build_lookups() {
     }]));
     [...packs].sort((a, b) => b.xp - a.xp).forEach((p, i) => pack_info[p.id].rank = i + 1);
 
-    for (let names of Object.values(pack_victors)) {
-        for (let name of names) pack_counts[name] = (pack_counts[name] || 0) + 1;
+    for (let ids of Object.values(pack_victors)) {
+        for (let id of ids) pack_counts[id] = (pack_counts[id] || 0) + 1;
     }
 }
 
@@ -84,9 +84,9 @@ function open_tower_row_link(event, id) {
     return false;
 }
 
-function open_player_row_link(event, name, rank) {
+function open_player_row_link(event, id, rank) {
     if (!plain_click(event)) return true;
-    open_player(name, rank);
+    open_player(id, rank);
     return false;
 }
 
@@ -114,13 +114,11 @@ function pack_button(pack, button = "pack-link") {
     return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
 }
 
-function player_row(name, rank, last) {
-    let player = find_player(name);
-    let encoded_name = encodeURIComponent(player ? player_identifier(player) : name).replace(/'/g, "%27");
+function player_row(player, rank, last) {
     return `
-        <tr data-name="${esc(name.toLowerCase())}">
+        <tr data-name="${esc(player.username.toLowerCase())}">
             <td>#${rank}</td>
-            <td>${player ? `<a class="table-row-link player-link" href="/?u=${encoded_name}" onclick="return open_player_row_link(event, decodeURIComponent('${encoded_name}'), ${rank})">${role(name, true)}</a>` : role(name, true)}</td>
+            <td><a class="table-row-link player-link" href="/?u=${player.id}" onclick="return open_player_row_link(event, '${player.id}', ${rank})">${role(player.username, true)}</a></td>
             ${last}
         </tr>
     `;
@@ -142,16 +140,15 @@ function more_rows(table) {
     $("#" + table).append(next.map(state.row).join(""));
 }
 
-function render_victors(table, names, empty) {
-    let victors = names.filter(name => player_lookup[name]);
-    if (!victors.length) {
+function render_victors(table, ids, empty) {
+    if (!ids.length) {
         delete tables[table];
         $("#" + table).html(empty_row(empty));
         return;
     }
-    render_rows(table, victors, name => {
-        let p = player_lookup[name];
-        return player_row(name, p.rank, td_right(`Level ${level_text(p.total_xp, true)}`));
+    render_rows(table, ids, id => {
+        let p = player_lookup[id];
+        return player_row(p, p.rank, td_right(`Level ${level_text(p.total_xp, true)}`));
     });
 }
 
@@ -202,9 +199,9 @@ function render_players() {
     let value = {
         xp: p => p.total_xp,
         completions: p => p.completions.length,
-        packs: p => pack_counts[p.username] || 0,
-        hardest: p => player_hardest[p.username],
-    }[sort] || (p => diff_counts[p.username][diff] || 0);
+        packs: p => pack_counts[p.id] || 0,
+        hardest: p => player_hardest[p.id],
+    }[sort] || (p => diff_counts[p.id][diff] || 0);
     let text = {
         xp: v => `Level ${level_text(v, true)}`,
         completions: v => `${v} SCs`,
@@ -220,7 +217,7 @@ function render_players() {
     ranked.forEach((p, i) => {
         if (p.username.toLowerCase().includes(search) && (!country || p.nationality == country)) matches.push([p, i + 1, value(p)]);
     });
-    render_rows("players-table", matches, ([p, rank, v]) => player_row(p.username, rank, td_right(text(v))));
+    render_rows("players-table", matches, ([p, rank, v]) => player_row(p, rank, td_right(text(v))));
 }
 
 function filter_packs() {
@@ -230,7 +227,7 @@ function filter_packs() {
 
 function checked_player() {
     if (!me) return false;
-    return players.find(p => p.user_id == me.id) || find_player(me.name);
+    return player_lookup[me.id];
 }
 
 function done_count(pack, player) {
@@ -281,16 +278,16 @@ function open_pack(id) {
     open_page("Packs", true);
     let pack = packs.find(p => p.id == id);
     let player = checked_player();
-    let names = pack_victors[id];
+    let victor_ids = pack_victors[id];
 
     $("#pack-name").html(esc(pack.name));
     $("#pack-progress").html(`${done_count(pack, player)}/${pack.towers.length}`);
     $("#pack-bonus").html(`${format_num(pack.xp)} XP`);
-    $("#pack-victor-count").html(names.length);
+    $("#pack-victor-count").html(victor_ids.length);
 
     let pack_towers = pack.towers.map(tid => tower_lookup[tid]).filter(Boolean).sort((a, b) => a.difficulty - b.difficulty);
     $("#pack-towers").html(pack_towers.map(t => diff_row(t, player && player.completions.includes(t.id) ? "tower-link-done" : "tower-link")).join(""));
-    render_victors("pack-victors", names, "No pack victors yet");
+    render_victors("pack-victors", victor_ids, "No pack victors yet");
 }
 
 function range_color(value) {
@@ -391,7 +388,7 @@ $(document).on("click", "a[data-open]", function (e) {
 function render_tower_creators(creators) {
     let creator_links = names => names.map(c => {
         let player = find_player(c);
-        return player ? entity_link("u", player.username, esc(c)) : esc(c);
+        return player ? entity_link("u", player.id, esc(c)) : esc(c);
     }).join(", ");
     let toggle = label => `<button type="button" class="link-button" onclick="toggle_tower_creators()">${label}</button>`;
     if (creators.length <= 5) return creator_links(creators);
@@ -518,15 +515,14 @@ function render_player_creations() {
     $("#player-creations").html(player_created_towers.filter(t => kind == "all" || (kind == "solo") == (t.creators.length == 1)).map(t => diff_row(t)).join(""));
 }
 
-function open_player(name, rank) {
-    let player = find_player(name) || players.find(p => player_identifier(p) == name);
+function open_player(key, rank) {
+    let player = find_player(key);
     if (!player) return;
     let username = player.username;
-    current_player_name = username;
-    current_player_id = player_identifier(player);
+    current_player_id = player.id;
     open_page("Leaderboard", true);
     let job = role(username);
-    let counts = diff_counts[username];
+    let counts = diff_counts[player.id];
     let sum = (a, b) => a + b;
     let percent = (got, total) => (total ? got / total * 100 : 0).toFixed(2);
     let got_all = Object.values(counts).reduce(sum, 0);
@@ -558,13 +554,13 @@ function open_player(name, rank) {
         </tr>
     ` + diff_rows);
 
-    let completed = player_towers[username];
+    let completed = player_towers[player.id];
     render_rows("player-towers", completed, id => diff_row(tower_lookup[id]));
     let created = towers.filter(t => t.creators.some(creator => creator.toLowerCase() == username.toLowerCase()))
         .sort((a, b) => b.difficulty - a.difficulty || a.rank - b.rank);
     player_created_towers = created;
     render_player_creations();
-    let completed_packs = packs.filter(pack => pack_victors[pack.id].includes(username))
+    let completed_packs = packs.filter(pack => pack_victors[pack.id].includes(player.id))
         .sort((a, b) => pack_info[a.id].rank - pack_info[b.id].rank);
     $("#player-packs").html(completed_packs.length ? completed_packs.map(pack => `
         <tr>
@@ -612,7 +608,7 @@ for (let code of countries) {
 }
 
 restore(() => {
-    open_player(players[0].username);
+    open_player(players[0].id);
     open_pack(packs[0].id);
     open_tower(towers[0].id);
     if (!route(new URLSearchParams(window.location.search))) open_page("Home");

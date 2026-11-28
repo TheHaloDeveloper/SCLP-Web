@@ -1,15 +1,7 @@
-function player_identifier(player) {
-    return String(player.user_id || player.username || "").trim();
-}
-
-function find_player(name) {
-    if (name == null || name == "") return false;
-    if (player_lookup[name]) return player_lookup[name];
-    let lower = String(name).toLowerCase();
-    for (let key in player_lookup) {
-        if (String(key).toLowerCase() == lower) return player_lookup[key];
-    }
-    return false;
+function find_player(key) {
+    if (key == null || key == "") return false;
+    let lower = String(key).toLowerCase();
+    return player_lookup[key] || players.find(p => p.username.toLowerCase() == lower) || false;
 }
 
 function average(values) {
@@ -133,7 +125,6 @@ $("#menu").on("click", () => $("#nav").toggleClass("open"));
 let current_page = "Home";
 let showing_detail = false;
 let current_tower_id = null;
-let current_player_name = null;
 let current_player_id = null;
 let current_pack_id = null;
 
@@ -218,8 +209,8 @@ function render_scotw() {
     $("#scotw-title").attr("class", diff_name(tower.difficulty));
     $("#scotw-title").html(`<button class="tower-link" onclick="open_tower(${tower.id})">${esc(tower.name)}</button>`);
 
-    let lb = scotw_points.map(p => ({username: p.username, points: +p.points})).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
-    $("#scotw-table").html(lb.map((e, i) => player_row(e.username, i + 1, td_right(`${e.points} pts`))).join(""));
+    let lb = scotw_points.map(p => ({player: player_lookup[p.id], points: p.points})).sort((a, b) => b.points - a.points || a.player.username.localeCompare(b.player.username));
+    $("#scotw-table").html(lb.map((e, i) => player_row(e.player, i + 1, td_right(`${e.points} pts`))).join(""));
 
     filter_scotw();
     update_timer();
