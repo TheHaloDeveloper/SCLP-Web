@@ -111,7 +111,7 @@ function diff_row(t, button) {
 }
 
 function pack_button(pack, button = "pack-link") {
-    return `<button class="${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
+    return `<a class="table-row-link ${button}" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${esc(pack.name)}</button>`;
 }
 
 function player_row(name, rank, last) {
@@ -569,7 +569,7 @@ function open_player(name, rank) {
     $("#player-packs").html(completed_packs.length ? completed_packs.map(pack => `
         <tr>
             <td class="${diff_name(pack_info[pack.id].avg_diff)}">#${pack_info[pack.id].rank}</td>
-            <td>${pack_button(pack)}</td>
+            <td><button class="pack-link" onclick="open_pack('${pack.id}')" onmousedown="middle_click(event, '/?pk=${encodeURIComponent(pack.id)}')">${pack.name}</button></td>
             ${td_right(`${format_num(pack.xp)} XP`)}
         </tr>
     `).join("") : empty_row("No packs completed"));
