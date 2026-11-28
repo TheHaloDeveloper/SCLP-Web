@@ -61,11 +61,15 @@ def parse_packs(raw, tower_by_id):
         packs.append({"id": pack["id"], "name": pack["name"], "towers": pack["towers"], "xp": final_xp})
     return sorted(packs, key=lambda p: p["xp"])
 
-tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "place_link", "creators", "length", "alternate_names", "previous_names", "enjoyability", "votes"]
+tower_fields = ["id", "name", "difficulty", "rank", "xp", "places", "place_link", "creators", "length", "alternate_names", "previous_names"]
 
 def load_enjoyability(tower_id=None):
     rows = db.query("select tower_id, round(avg(rating), 1)::float8 as enjoyability, count(*)::int as votes from enjoyability where %s::int is null or tower_id = %s group by tower_id", (tower_id, tower_id))
     return {r["tower_id"]: {"enjoyability": r["enjoyability"], "votes": r["votes"]} for r in rows}
+
+def my_ratings(user):
+    rows = db.query("select tower_id, rating from enjoyability where user_id = %s", (int(user["id"]),)) if user else []
+    return {r["tower_id"]: r["rating"] for r in rows}
 
 def load_places():
     places = {}
@@ -80,16 +84,14 @@ def load_db():
         db.query("select abbr, name, link from games order by lower(abbr)"),
         db.query("select p.username, sum(a.tickets)::int as points from scotw_awards a join players p using (user_id) group by p.user_id, p.username"),
         [{"id": str(p["id"]), "name": p["name"], "towers": p["tower_ids"]} for p in db.query("select id, name, tower_ids from packs")],
-        load_enjoyability(),
         load_places(),
     )
 
 def build():
-    players, towers, games, scotw_points, raw_packs, enjoyability, places = load_db()
+    players, towers, games, scotw_points, raw_packs, places = load_db()
 
     for tower in towers:
         tower["xp"] = math.floor(3 ** round(tower["difficulty"] - 8, 2) * 100)
-        tower.update(enjoyability.get(tower["id"], {"enjoyability": None, "votes": 0}))
         tower["places"] = places.get(tower["id"], [])
         if tower["place_link"]:
             tower["places"].append(["Place", ""])
@@ -176,7 +178,8 @@ threading.Thread(target=refresh, daemon=True).start()
 
 @app.route("/tower_data")
 def tower_data():
-    return jsonify(data["towers"])
+    ratings = load_enjoyability()
+    return jsonify([{**t, **ratings.get(t["id"], {"enjoyability": None, "votes": 0})} for t in data["towers"]])
 
 @app.route("/tower_data_csv")
 def tower_data_csv():
@@ -253,7 +256,7 @@ def page_meta():
 @app.route("/")
 def home():
     user = session.get("user")
-    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": data["scotw_points"], "diffs": diffs, "me": user}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
+    return render_template("index.html", js={"cool_members": cool_members, "staff": staff, "roles": roles, "role_colors": role_colors, "scotw_points": data["scotw_points"], "diffs": diffs, "me": user, "ratings": load_enjoyability(), "mine": my_ratings(user)}, version=data["version"], diffs=diffs, player_sorts=player_sorts, meta=page_meta())
 
 @app.route("/data.js")
 def data_js():
@@ -302,12 +305,6 @@ def callback():
     session.permanent = True
     session["user"] = {"id": user["sub"], "name": user.get("preferred_username") or user["name"]}
     return redirect("/")
-
-@app.route("/my_enjoyability")
-def my_enjoyability():
-    user = session.get("user")
-    rows = db.query("select tower_id, rating from enjoyability where user_id = %s", (int(user["id"]),)) if user else []
-    return jsonify({r["tower_id"]: r["rating"] for r in rows})
 
 @app.route("/enjoyability", methods=["POST"])
 def set_enjoyability():

@@ -12,14 +12,14 @@ let player_towers = {};
 let tower_creators_expanded = false;
 let player_created_towers = [];
 
-let my_enjoyability = {};
-if (me) fetch("/my_enjoyability").then(r => r.json()).then(data => my_enjoyability = data);
+let my_enjoyability = mine;
 
 function victors(id) {
     return victors_by_tower[id].length;
 }
 
 function derive_data() {
+    for (let t of towers) Object.assign(t, ratings[t.id] || {enjoyability: null, votes: 0});
     victors_by_tower = Object.fromEntries(towers.map(t => [t.id, []]));
     pack_victors = Object.fromEntries(packs.map(p => [p.id, []]));
     for (let p of players) {
